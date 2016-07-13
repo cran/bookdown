@@ -1,0 +1,37 @@
+% Please edit documentation in R/gitbook.R
+\name{gitbook}
+\alias{gitbook}
+\title{The GitBook output format}
+\usage{
+gitbook(fig_caption = TRUE, number_sections = TRUE, self_contained = FALSE, 
+    lib_dir = "libs", ..., split_by = c("chapter", "chapter+number", "section", 
+        "section+number", "rmd", "none"), split_bib = TRUE, config = list())
+}
+\arguments{
+\item{fig_caption, number_sections, self_contained, lib_dir, ...}{Arguments to be
+passed to \code{rmarkdown::\link{html_document}()} (\code{...} not
+including \code{toc}, \code{theme}, and \code{template}).}
+
+\item{split_by}{How to name the HTML output files from the book: \code{rmd}
+uses the base filenames of the input Rmd files to create the HTML
+filenames, e.g. generate \file{chapter1.html} for \file{chapter1.Rmd};
+\code{none} means do not split the HTML file (the book will be a single
+HTML file); \code{chapter} means split the file by the first-level headers;
+\code{section} means the second-level headers. For \code{chapter} and
+\code{section}, the HTML filenames will be determined by the header ID's,
+e.g. the filename for the first chapter with a chapter title \code{#
+Introduction} will be \file{introduction.html}; for \code{chapter+number}
+and \code{section+number}, the chapter/section numbers will be prepended to
+the HTML filenames, e.g. \file{1-introduction.html} and
+\file{2-1-literature.html}.}
+
+\item{split_bib}{Whether to split the bibliography onto separate pages where
+the citations are actually used.}
+
+\item{config}{A list of configuration options for the gitbook style, such as
+the font/theme settings.}
+}
+\description{
+This output format function ported a style provided by GitBook
+(\url{https://www.gitbook.com}) for R Markdown.
+}
