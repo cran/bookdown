@@ -14,6 +14,11 @@ word_document2 = function(fig_caption = TRUE, md_extensions = NULL, pandoc_args 
     process_markdown(input_file, from, pandoc_args, TRUE)
     if (is.function(pre)) pre(metadata, input_file, ...)
   }
+  post = config$post_processor
+  config$post_processor = function(metadata, input, output, clean, verbose) {
+    if (is.function(post)) output = post(metadata, input, output, clean, verbose)
+    move_output(output)
+  }
   config$bookdown_output_format = 'docx'
   config = set_opts_knit(config)
   config

@@ -86,13 +86,14 @@ tufte_html_book = function(...) {
   html_chapters(..., base_format = tufte::tufte_html)
 }
 
-#' Output formats that allow numbering and cross-referencing figures/tables
+#' Output formats that allow numbering and cross-referencing
+#' figures/tables/equations
 #'
 #' These are simple wrappers of the output format functions like
 #' \code{rmarkdown::\link{html_document}()}, and they added the capability of
-#' numbering figures/tables and cross-referencing them. See References for the
-#' syntax. Note you can also cross-reference sections by their ID's using the
-#' same syntax as figures/tables.
+#' numbering figures/tables/equations/theorems and cross-referencing them. See
+#' References for the syntax. Note you can also cross-reference sections by
+#' their ID's using the same syntax when sections are numbered.
 #' @param ...,fig_caption,md_extensions,pandoc_args Arguments to be passed to a
 #'   specific output format function. For a function \code{foo2()}, its
 #'   arguments are passed to \code{foo()}, e.g. \code{...} of
@@ -103,6 +104,7 @@ tufte_html_book = function(...) {
 #'   (the i-th figure/table); if \code{FALSE}, figures/tables will be numbered
 #'   sequentially in the document from 1, 2, ..., and you cannot cross-reference
 #'   section headers in this case.
+#' @inheritParams pdf_book
 #' @return An R Markdown output format object to be passed to
 #'   \code{rmarkdown::\link{render}()}.
 #' @note These function are expected to work with a single R Markdown document
@@ -110,37 +112,36 @@ tufte_html_book = function(...) {
 #'   \code{rmarkdown::render()} instead of \code{bookdown::render_book()}. The
 #'   functions \samp{tufte_*()} are wrappers of funtions in the \pkg{tufte}
 #'   package.
-#' @references \url{http://rstudio.github.io/bookdown/figures.html}
+#' @references \url{https://bookdown.org/yihui/bookdown/}
 #' @export
-html_document2 = function(..., number_sections = TRUE) {
-  html_document_alt(
-    ..., number_sections = number_sections, base_format = rmarkdown::html_document
-  )
-}
-
-#' @rdname html_document2
-#' @export
-tufte_html2 = function(..., number_sections = FALSE) {
-  html_document_alt(
-    ..., number_sections = number_sections, base_format = tufte::tufte_html
-  )
-}
-
-html_document_alt = function(
+html_document2 = function(
   ..., number_sections = TRUE, base_format = rmarkdown::html_document
 ) {
+  base_format = get_base_format(base_format)
   config = base_format(..., number_sections = number_sections)
   post = config$post_processor  # in case a post processor have been defined
   config$post_processor = function(metadata, input, output, clean, verbose) {
     if (is.function(post)) output = post(metadata, input, output, clean, verbose)
     x = readUTF8(output)
-    writeUTF8(resolve_refs_html(x, global = !number_sections), output)
+    x = resolve_refs_html(x, global = !number_sections)
+    x = restore_part_html(x, remove = FALSE)
+    x = restore_appendix_html(x)
+    writeUTF8(x, output)
     output
   }
   config$bookdown_output_format = 'html'
   config = set_opts_knit(config)
   config
 }
+
+#' @rdname html_document2
+#' @export
+tufte_html2 = function(..., number_sections = FALSE) {
+  html_document2(
+    ..., number_sections = number_sections, base_format = tufte::tufte_html
+  )
+}
+
 
 #' Combine different parts of an HTML page
 #'
@@ -278,7 +279,9 @@ split_chapters = function(output, build = build_chapter, number_sections, split_
         i = h12[i] - 1
         if (tail(n12, 1) == 'h2' && any(n12 == 'h1')) i = c(i, length(html_body))
         for (j in i) {
-          if (html_body[j] != '</div>') warning(
+          # the i-th lines should be the closing </div> for h1, or empty because
+          # of the appendix h1, which will be removed
+          if (!html_body[j] %in% c('</div>', '')) warning(
             'Something wrong with the HTML output. The line ', html_body[j],
             ' is supposed to be </div>'
           )
@@ -384,15 +387,20 @@ edit_link = function(target) {
   button_link(sprintf(setting$link, target), setting$text)
 }
 
-edit_setting = function() {
-  config = load_config()[['edit']]
+edit_setting = function(config) {
+  config_default = load_config()[['edit']]
+  if (missing(config) || is.null(config)) config = config_default
+  if (is.null(config)) return()
+  if (is.character(config)) config = list(link = config, text = NULL)
   if (!is.character(link <- config[['link']])) return()
   if (!grepl('%s', link)) stop('The edit link must contain %s')
-  if (!is.character(text <- config[['text']])) text = 'Edit'
+  if (!is.character(text <- config[['text']])) text = ui_language('edit')
   list(link = link, text = text)
 }
 
 resolve_refs_html = function(content, global = FALSE) {
+  content = resolve_ref_links_html(content)
+
   res = parse_fig_labels(content, global)
   content = res$content
   ref_table = c(res$ref_table, parse_section_labels(content))
@@ -400,33 +408,60 @@ resolve_refs_html = function(content, global = FALSE) {
   # look for @ref(label) and resolve to actual figure/table/section numbers
   m = gregexpr('(?<!\\\\)@ref\\(([-:[:alnum:]]+)\\)', content, perl = TRUE)
   refs = regmatches(content, m)
-  regmatches(content, m) = lapply(refs, ref_to_number, ref_table, FALSE)
+  for (i in seq_along(refs)) {
+    if (length(refs[[i]]) == 0) next
+    # strip off html tags when resolve numbers in <img>'s alt attribute because
+    # the numbers may contain double quotes, e.g. <img alt="<a
+    # href="#foo">1.2</a>"" width=...
+    ref = ref_to_number(refs[[i]], ref_table, FALSE)
+    if (is_img_line(content[i])) ref = strip_html(ref)
+    refs[[i]] = ref
+  }
+  regmatches(content, m) = refs
   content
 }
+
+is_img_line = function(x) grepl('^<img src=".* alt="', x)
 
 ref_to_number = function(ref, ref_table, backslash) {
   if (length(ref) == 0) return(ref)
   ref = gsub(if (backslash) '^\\\\@ref\\(|\\)$' else '^@ref\\(|\\)$', '', ref)
   num = ref_table[ref]
   i = is.na(num)
-  j = i & grepl('^eq:', ref)
-  # equation labels will be replaced by \ref{eq:label}; the reason that we
-  # cannot directly use \ref{} for HTML even MathJax supports it is that
-  # Pandoc will remove the LaTeX command \ref{} for HTML output, and MathJax
-  # needs the literal command \ref{} on the page
-  i[j] = FALSE
   if (any(i)) {
     if (!isTRUE(opts$get('preview')))
       warning('The label(s) ', paste(ref[i], collapse = ', '), ' not found', call. = FALSE)
     num[i] = '<strong>??</strong>'
   }
-  ifelse(
-    j, sprintf(if (backslash) '\\\\ref{%s}' else '\\ref{%s}', ref),
-    sprintf('<a href="#%s">%s</a>', ref, num)
-  )
+  # equation references should include paratheses
+  i = grepl('^eq:', ref)
+  num[i] = paste0('(', num[i], ')')
+  res = sprintf('<a href="#%s">%s</a>', ref, num)
+  # do not add relative links to equation numbers in ePub/Word (not implemented)
+  ifelse(backslash & i, num, res)
 }
 
 reg_chap = '^(<h1><span class="header-section-number">)([A-Z0-9]+)(</span>.+</h1>)$'
+
+# default names for labels
+label_names = list(fig = 'Figure ', tab = 'Table ', eq = 'Equation ')
+# prefixes for theorem environments
+theorem_abbr = c(
+  theorem = 'thm', lemma = 'lem', definition = 'def', corollary = 'cor',
+  proposition = 'prp', example = 'ex'
+)
+# numbered math environments
+label_names_math = setNames(list(
+  'Theorem ', 'Lemma ', 'Definition ', 'Corollary ', 'Proposition ', 'Example '
+), theorem_abbr)
+# unnumbered math environments
+label_names_math2 = list(proof = 'Proof. ', remark = 'Remark. ')
+
+label_names = c(label_names, label_names_math)
+
+# types of labels currently supported, e.g. \(#fig:foo), \(#tab:bar)
+label_types = names(label_names)
+reg_label_types = paste(label_types, collapse = '|')
 
 # parse figure/table labels, and number them either by section numbers (Figure
 # 1.1, 1.2, ..., 2.1, ...), or globally (Figure 1, 2, ...)
@@ -437,11 +472,14 @@ parse_fig_labels = function(content, global = FALSE) {
   arry = character()  # an array of the form c(label = number, ...)
   if (global) chaps = '0'  # Chapter 0 (could be an arbitrary number)
 
+  content = restore_math_labels(content)
+
   # look for (#fig:label) or (#tab:label) and replace them with Figure/Table x.x
-  m = gregexpr('\\(#((fig|tab):[-[:alnum:]]+)\\)', content)
+  m = gregexpr(sprintf('\\(#((%s):[-/[:alnum:]]+)\\)', reg_label_types), content)
   labs = regmatches(content, m)
-  cntr = new_counters(c('Figure', 'Table'), chaps)  # chapter counters
+  cntr = new_counters(label_types, chaps)  # chapter counters
   figs = grep('^<div class="figure', content)
+  eqns = grep('<span class="math display">', content)
 
   for (i in seq_along(labs)) {
     lab = labs[[i]]
@@ -451,12 +489,15 @@ parse_fig_labels = function(content, global = FALSE) {
 
     j = if (global) chaps else tail(chaps[lines <= i], 1)
     lab = gsub('^\\(#|\\)$', '', lab)
-    type = ifelse(grepl('^fig:', lab), 'Figure', 'Table')
-    num = cntr$inc(type, j)
-    if (!global) num = paste0(j, '.', num)  # Figure X.x
+    type = gsub('^([^:]+):.*', '\\1', lab)
+    num = arry[lab]
+    if (is.na(num)) {
+      num = cntr$inc(type, j)  # increment number only if the label has not been used
+      if (!global) num = paste0(j, '.', num)  # Figure X.x
+    }
     arry = c(arry, setNames(num, lab))
 
-    if (type == 'Figure') {
+    switch(type, fig = {
       if (length(grep('^<p class="caption', content[i - 0:1])) == 0) {
         # remove these labels, because there must be a caption on this or
         # previous line (possible negative case: the label appears in the alt
@@ -464,21 +505,43 @@ parse_fig_labels = function(content, global = FALSE) {
         labs[[i]] = character(length(lab))
         next
       }
-      labs[[i]] = paste0(type, ' ', num, ': ')
+      labs[[i]] = paste0(label_prefix(type), num, ': ')
       k = max(figs[figs <= i])
       content[k] = paste0(content[k], sprintf('<span id="%s"></span>', lab))
-    } else {
+    }, tab = {
       if (length(grep('^<caption>', content[i - 0:1])) == 0) next
-      labs[[i]] = sprintf('<span id="%s">%s</span>', lab, paste0(type, ' ', num, ': '))
-    }
+      labs[[i]] = sprintf(
+        '<span id="%s">%s</span>', lab, paste0(label_prefix(type), num, ': ')
+      )
+    }, eq = {
+      labs[[i]] = sprintf('\\tag{%s}', num)
+      k = max(eqns[eqns <= i])
+      content[k] = sub(
+        '(<span class="math display")', sprintf('\\1 id="%s"', lab), content[k]
+      )
+    }, {
+      labs[[i]] = paste0(label_prefix(type), num, ' ')
+    })
   }
 
   regmatches(content, m) = labs
 
   # remove labels in figure alt text (it will contain \ like (\#fig:label))
-  content = gsub('"\\(\\\\#(fig:[-[:alnum:]]+)\\)', '"', content)
+  content = gsub('"\\(\\\\#(fig:[-/[:alnum:]]+)\\)', '"', content)
 
   list(content = content, ref_table = arry)
+}
+
+
+# given a label, e.g. fig:foo, figure out the appropriate prefix
+label_prefix = function(type, dict = label_names) i18n('label', type, dict)
+
+ui_names = list(edit = 'Edit', chapter_name = '')
+ui_language = function(key, dict = ui_names) i18n('ui', key, ui_names)
+
+i18n = function(group, key, dict = list()) {
+  labels = load_config()[['language']][[group]]
+  if (is.null(labels[[key]])) dict[[key]] else labels[[key]]
 }
 
 sec_num = '^<h[1-6]><span class="header-section-number">([.A-Z0-9]+)</span>.+</h[1-6]>$'
@@ -496,6 +559,43 @@ parse_section_labels = function(content) {
     ))
   }
   arry
+}
+
+reg_ref_links = '(\\(ref:[-/[:alnum:]]+\\))'
+# parse "reference links" of the form "(ref:foo) text", and replace (ref:foo) in
+# the content with `text`; this is for figure/table captions that are
+# complicated in the sense that they contain special LaTeX/HTML characters (e.g.
+# _), or special Markdown syntax (e.g. citations); we can just use (ref:foo) in
+# the captions, and write the actual captions elsewhere using (ref:foo) text
+resolve_ref_links_html = function(x) {
+  res = parse_ref_links(x, '^<p>%s (.+)</p>$')
+  if (is.null(res)) return(x)
+  restore_ref_links(res$content, '(?<!>)%s', res$tags, res$txts, TRUE)
+}
+
+parse_ref_links = function(x, regexp) {
+  r = sprintf(regexp, reg_ref_links)
+  if (length(i <- grep(r, x)) == 0) return()
+  tags = gsub(r, '\\1', x[i])
+  txts = gsub(r, '\\2', x[i])
+  x[i] = ''
+  list(content = x, tags = tags, txts = txts, matches = i)
+}
+
+restore_ref_links = function(x, regexp, tags, txts, alt = TRUE) {
+  r = sprintf(regexp, reg_ref_links)
+  m = gregexpr(r, x, perl = TRUE)
+  tagm = regmatches(x, m)
+  for (i in seq_along(tagm)) {
+    tag = tagm[[i]]
+    if (length(tag) == 0) next
+    k = match(tag, tags)
+    tag[!is.na(k)] = txts[na.omit(k)]
+    if (alt && is_img_line(x[i])) tag = strip_html(tag)
+    tagm[[i]] = tag
+  }
+  regmatches(x, m) = tagm
+  x
 }
 
 # add automatic identifiers to those section headings without ID's
@@ -536,8 +636,8 @@ add_toc_ids = function(toc) {
 
 add_chapter_prefix = function(content) {
   config = load_config()
-  chapter_name = config[['chapter_name']]
-  if (is.null(chapter_name)) return(content)
+  chapter_name = config[['chapter_name']] %n% ui_language('chapter_name')
+  if (is.null(chapter_name) || chapter_name == '') return(content)
   chapter_fun = if (is.character(chapter_name)) {
     function(i) switch(
       length(chapter_name), paste0(chapter_name, i),
@@ -579,11 +679,15 @@ restore_links = function(segment, full, lines, filenames) {
   segment
 }
 
-restore_part_html = function(x) {
+restore_part_html = function(x, remove = TRUE) {
   i = grep('^<h1>\\(PART\\) .+</h1>$', x)
   if (length(i) == 0) return(x)
   i = i[grep('^<div .*class=".*unnumbered.*">$', x[i - 1])]
-  x[i] = x[i - 1] = x[i + 1] = ''
+  if (remove) {
+    x[i] = x[i - 1] = x[i + 1] = ''
+  } else {
+    x[i] = gsub('<h1>\\(PART\\) ', '<h1 class="part">', x[i])
+  }
   r = '^<li><a href="[^"]*">\\(PART\\) (.+)</a>(.+)$'
   i = grep(r, x)
   if (length(i) == 0) return(x)
@@ -651,16 +755,17 @@ parse_a_targets = function(x) {
   }))
 }
 
-# we assume one footnote only contains one paragraph here, although it is
-# possible to write multiple paragraphs in a footnote with Pandoc's Markdown
+# parse footnotes in the div of class "footnotes"; each footnote is one <li>
+# with id fnX and a link back to the text
 parse_footnotes = function(x) {
   i = which(x == '<div class="footnotes">')
   if (length(i) == 0) return(list(items = character(), range = integer()))
   j = which(x == '</div>')
   j = min(j[j > i])
   n = length(x)
-  r = '<li id="fn([0-9]+)"><p>(.+)<a href="#fnref\\1">.</a></p></li>'
-  items = grep(r, x[i:n], value = TRUE)
+  r = '<li id="fn([0-9]+)"><p>.+?<a href="#fnref\\1">.</a></p></li>'
+  s = paste(x[i:n], collapse = '')
+  items = unlist(regmatches(s, gregexpr(r, s)))
   list(items = setNames(items, gsub(r, 'fn\\1', items)), range = i:j)
 }
 
@@ -756,4 +861,17 @@ js_min_sources = function(x) {
   r = '[.]min[.]js$'
   x = grep(r, x, value = TRUE)
   c(gsub(r, '.js', x), gsub(r, '.min.map', x))
+}
+
+# only parse equation labels (\#eq:label) in math environments; this needs
+# special treatment because the backslash \ before # is preserved in equation
+# environments in HTML output, whereas it is removed in normal paragraphs
+restore_math_labels = function(x) {
+  i1 = grep('^(<[a-z]+>)?<span class="math display">\\\\\\[', x)
+  i2 = grep('\\\\\\]</span>(</[a-z]+>)?$', x)
+  if (length(i1) * length(i2) == 0) return(x)
+  i = unlist(mapply(seq, i1, next_nearest(i1, i2, TRUE), SIMPLIFY = FALSE))
+  # remove \ before #
+  x[i] = gsub('\\(\\\\(#eq:[-/[:alnum:]]+)\\)', '(\\1)', x[i])
+  x
 }
