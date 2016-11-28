@@ -123,9 +123,9 @@ html_document2 = function(
   config$post_processor = function(metadata, input, output, clean, verbose) {
     if (is.function(post)) output = post(metadata, input, output, clean, verbose)
     x = readUTF8(output)
-    x = resolve_refs_html(x, global = !number_sections)
+    x = restore_appendix_html(x, remove = FALSE)
     x = restore_part_html(x, remove = FALSE)
-    x = restore_appendix_html(x)
+    x = resolve_refs_html(x, global = !number_sections)
     writeUTF8(x, output)
     output
   }
@@ -686,22 +686,31 @@ restore_part_html = function(x, remove = TRUE) {
   if (remove) {
     x[i] = x[i - 1] = x[i + 1] = ''
   } else {
-    x[i] = gsub('<h1>\\(PART\\) ', '<h1 class="part">', x[i])
+    x[i] = mapply(
+      gsub, '<h1>\\(PART\\)', x = x[i],
+      sprintf('<h1><span class="header-section-number">%s</span>', as.roman(seq_along(i)))
+    )
   }
   r = '^<li><a href="[^"]*">\\(PART\\) (.+)</a>(.+)$'
   i = grep(r, x)
   if (length(i) == 0) return(x)
-  x[i] = gsub(r, '<li class="part"><span><b>\\1</b></span>\\2', x[i])
+  x[i] = mapply(
+    gsub, r, x = x[i],
+    sprintf('<li class="part"><span><b>%s \\1</b></span>\\2', as.roman(seq_along(i)))
+  )
   x
 }
 
-# remove the appendix chapter (only a placeholder) in the body, and change the
-# numbering style in the appendices (also change in TOC), e.g. A.1, A.2, B.1, ...
-restore_appendix_html = function(x) {
-  r = '^(<h1>)\\(APPENDIX\\) (.+</h1>)$'
+# process the appendix "chapter" in the body, and change the numbering style in
+# the appendices (also change in TOC), e.g. A.1, A.2, B.1, ...
+restore_appendix_html = function(x, remove = TRUE) {
+  r = '^(<h1>)\\(APPENDIX\\) (.+)(</h1>)$'
   i = find_appendix_line(r, x)
   if (length(i) == 0) return(x)
-  x[i] = x[i - 1] = x[i + 1] = ''  # no need to show appendix in body
+  # keep or remove the appendix heading in body
+  if (remove) {
+    x[i] = x[i - 1] = x[i + 1] = ''
+  } else x[i] = gsub(r, '\\1\\2\\3', x[i])
   x = number_appendix(x, i + 1, length(x), 'header')
   r = '^<li><a href="[^"]*">\\(APPENDIX\\) (.+)</a>(.+)$'
   i = find_appendix_line(r, x)
