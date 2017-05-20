@@ -1,3 +1,37 @@
+# CHANGES IN bookdown VERSION 0.4 (unreleased)
+
+## NEW FEATURES
+
+- Added special syntax for unnumbered part headers: `# (PART\*)`. Numbered parts should be written after `# (PART)` as before (thanks, @brooksambrose, http://stackoverflow.com/q/43688902/559676).
+
+- The `gitbook` output format also supports `abstract` in YAML now (thanks, @maxheld83, #311).
+
+- For the `gitbook` output format, the `downloads` option in `config` supports `rmd` now (e.g. `download: ["pdf", "epub", "rmd"]`) if the edit link has been specified and is a link to Github (thanks, @coatless, #330).
+
+- You can set the global R option `bookdown.post.latex` via `options()` to be a function to post-process the LaTeX output of the `pdf_book` format; see `?bookdown::pdf_book` for details (thanks, @nicksolomon, #373).
+
+## BUG FIXES
+
+- The HTML output file is not moved to the output directory when `split_by = 'none'` in `bookdown::gitbook` or `bookdown::html_book` (http://stackoverflow.com/q/40976073/559676).
+
+- The YAML option `includes: before_body` works correctly for `gitbook` output now (thanks, @benmarwick, #267).
+
+- Theorem environments are not defined for LaTeX output unless a `theorem` block is present (thanks, @JeffreyRacine, #291).
+
+- For `remark` and `proof` blocks, the chunk option `name` did not work correctly for non-LaTeX output (thanks, @ugroempi, #347).
+
+- Some text references do not work for HTML and Word output (thanks, @ugroempi, #363).
+
+- The option `chapter_name` in `_bookdown.yml` does not work when it is specified as a function (thanks, @tzerk, 0c05c3828be).
+
+- External assets such as fonts/css files should never be wiped when rendering a book to HTML (thanks, @nicholaelaw, #398).
+
+## MINOR CHANGES
+
+- The `daemon` argument was removed from `serve_book()`, but you can still pass it to `servr::httw()` via the `...` argument.
+
+- Added a small space (padding) to the right of section numbers in `gitbook` output, so that the section numbers are better separated from the titles (thanks, @aronatkins, #367).
+
 # CHANGES IN bookdown VERSION 0.3
 
 ## NEW FEATURES

@@ -7,6 +7,12 @@
 #' This function is based on \code{rmarkdown::\link{pdf_document}} (by default)
 #' with better default arguments. You can also change the default format to
 #' other LaTeX/PDF format functions using the \code{base_format} argument.
+#'
+#' The global R option \code{bookdown.post.latex} can be set to a function to
+#' post-process the LaTeX output. This function takes the character vector of
+#' the LaTeX output as its input argument, and should return a character vector
+#' to be written to the \file{.tex} output file. This gives you full power to
+#' post-process the LaTeX output.
 #' @param toc,number_sections,fig_caption See
 #'   \code{rmarkdown::\link{pdf_document}}, or the documentation of the
 #'   \code{base_format} function.
@@ -23,6 +29,7 @@
 #'   \code{NULL}, the quote footer will not be processed.
 #' @param highlight_bw Whether to convert colors for syntax highlighting to
 #'   black-and-white (grayscale).
+#' @note This output format can only be used with \code{\link{render_book}()}.
 #' @export
 pdf_book = function(
   toc = TRUE, number_sections = TRUE, fig_caption = TRUE, ...,
@@ -51,6 +58,8 @@ pdf_book = function(
       ) else x = process_quote_latex(x, quote_footer)
     }
     if (highlight_bw) x = highlight_grayscale_latex(x)
+    post = getOption('bookdown.post.latex')
+    if (is.function(post)) x = post(x)
     writeUTF8(x, f)
     latexmk(f, config$pandoc$latex_engine)
     unlink(with_ext(output, 'bbl'))  # not sure why latexmk left a .bbl there
@@ -127,11 +136,15 @@ resolve_ref_links_latex = function(x) {
 }
 
 restore_part_latex = function(x) {
-  r = '^\\\\(chapter|section)\\*\\{\\(PART\\)( |$)'
+  r = '^\\\\(chapter|section)\\*\\{\\(PART(\\*)?\\)( |$)'
   i = grep(r, x)
   if (length(i) == 0) return(x)
-  x[i] = gsub(r, '\\\\part{', x[i])
-  # remove the line \addcontentsline since it is not really a chapter title
+  x[i] = gsub(r, '\\\\part\\2{', x[i])
+  # remove (PART*) from the TOC lines for unnumbered parts
+  r = '^(\\\\addcontentsline\\{toc\\}\\{)(chapter|section)(\\}\\{)\\(PART\\*\\)( |$)'
+  x = gsub(r, '\\1part\\3', x)
+  # for numbered parts, remove the line \addcontentsline since it is not really
+  # a chapter title and should not be added to TOC
   j = grep('^\\\\addcontentsline\\{toc\\}\\{(chapter|section)\\}\\{\\(PART\\)( |$)', x)
   k = j; n = length(x)
   for (i in seq_along(j)) {
@@ -187,7 +200,7 @@ restore_block2 = function(x, global = FALSE) {
   if (is.na(i)) return(x)
   if (length(grep('\\\\(Begin|End)KnitrBlock', tail(x, -i))))
     x = append(x, '\\let\\BeginKnitrBlock\\begin \\let\\EndKnitrBlock\\end', i - 1)
-  if (length(grep('^\\\\BeginKnitrBlock\\{theorem\\}', x)) &&
+  if (length(grep(sprintf('^\\\\BeginKnitrBlock\\{%s\\}', paste(all_math_env, collapse = '|')), x)) &&
       length(grep('^\\s*\\\\newtheorem\\{theorem\\}', head(x, i))) == 0) {
     theorem_defs = sprintf(
       '%s\\newtheorem{%s}{%s}%s', theorem_style(names(theorem_abbr)), names(theorem_abbr),
@@ -209,7 +222,7 @@ restore_block2 = function(x, global = FALSE) {
   i3 = c(i3, if (length(i2 <- grep('^\\\\EndKnitrBlock\\{', x))) (i2 - 1)[x[i2 - 1] == ''])
   if (length(i3)) x = x[-i3]
 
-  r = '^(.*\\\\BeginKnitrBlock\\{[^}]+\\})(\\\\iffalse\\{-)([-0-9]+)(-\\}\\\\fi)(.*)$'
+  r = '^(.*\\\\BeginKnitrBlock\\{[^}]+\\})(\\\\iffalse\\{-)([-0-9]+)(-\\}\\\\fi\\{\\})(.*)$'
   if (length(i <- grep(r, x)) == 0) return(x)
   opts = sapply(strsplit(gsub(r, '\\3', x[i]), '-'), function(z) {
     intToUtf8(as.integer(z))
@@ -230,8 +243,20 @@ theorem_style = function(env) {
 
 process_quote_latex = function(x, commands) {
   for (i in grep('^\\\\end\\{quote\\}$', x)) {
-    if (!grepl('^---.+', x[i - 1])) next
-    x[i - 1] = paste0(commands[1], x[i - 1], commands[2])
+    i1 = NULL; i2 = i - 1
+    k = 1
+    while (k < i) {
+      xk = x[i - k]
+      if (grepl('^---.+', xk)) {
+        i1 = i - k
+        break
+      }
+      if (xk == '' || grepl('^\\\\begin', xk)) break
+      k = k + 1
+    }
+    if (is.null(i1)) next
+    x[i1] = paste0(commands[1], x[i1])
+    x[i2] = paste0(x[i2], commands[2])
   }
   x
 }

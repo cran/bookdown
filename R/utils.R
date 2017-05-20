@@ -150,7 +150,9 @@ merge_chapters = function(files, to, before = NULL, after = NULL, orig = files) 
   }))
   if (preview && !(files[1] %in% input))
     content = c(fetch_yaml(readUTF8(files[1])), content)
+  unlink(to)
   writeUTF8(content, to)
+  Sys.chmod(to, '644')
 }
 
 match_dashes = function(x) grep('^---\\s*$', x)
@@ -231,16 +233,7 @@ strip_search_text = function(x) {
 
 # quote a string and escape backslashes/double quotes
 json_string = function(x, toArray = FALSE) {
-  json_vector(x, toArray)
-}
-
-json_vector = function(x, toArray = FALSE, quote = TRUE) {
-  if (quote) {
-    x = gsub('(["\\])', "\\\\\\1", x)
-    x = gsub('[[:space:]]', " ", x)
-    if (length(x)) x = paste0('"', x, '"')
-  }
-  if (toArray) paste0('[', paste(x, collapse = ', '), ']') else x
+  knitr:::json_vector(x, toArray)
 }
 
 # manipulate internal options
@@ -258,52 +251,6 @@ output_path = function(...) {
 
 local_resources = function(x) {
   grep('^(f|ht)tps?://.+', x, value = TRUE, invert = TRUE)
-}
-
-#' Create a book skeleton
-#'
-#' Write Rmd files (named in the form \file{\%02d-chapter-title.Rmd}) for
-#' chapters with the chapter titles specified, create the output format file
-#' \file{_output.yml}, and generate the book configuration file
-#' \file{_bookdown.yml}.
-#' @param name An ID for the book to be written to the \code{book_filename}
-#'   field in \code{_bookdown.yml} and used as the \code{name} argument of
-#'   \code{\link{publish_book}()}. You can use the current directory name here.
-#' @param title,author The title and author of the book.
-#' @param chapters The chapter titles.
-#' @param documentclass The LaTeX document class.
-#' @param references The title of the references section.
-#' @noRd
-book_skeleton = function(
-  name, title, author, chapters = c('Preface {-}', 'Introduction'),
-  documentclass = 'book', references = 'References'
-) {
-  rmd_files = gsub('[^-a-zA-Z0-9]', '', gsub('\\s+', '-', c(chapters, references)))
-  rmd_files = sprintf('%02d-%s.Rmd', seq_along(rmd_files) - 1, rmd_files)
-  rmd_files[1] = 'index.Rmd'
-  write_file = function(x, f) {
-    if (file.exists(f)) stop('The file ', f, ' exists.')
-    writeUTF8(x, f)
-  }
-  titles = c(chapters, sprintf("`r if (knitr:::is_html_output()) '# %s {-}'`", references))
-  titles = paste('#', titles)
-  for (i in seq_along(rmd_files)) {
-    content = c(titles[i], '')
-    if (i == 1) {
-      content = c(
-        '---', sprintf('title: "%s"', title), sprintf('author: "%s"', author),
-        sprintf('documentclass: "%s"', documentclass),
-        'site: bookdown::bookdown_site', '---', '', content,
-        'Start writing your book here. If you are in RStudio,',
-        'Click the Build button to build the book.'
-      )
-    }
-    write_file(content, rmd_files[i])
-  }
-  write_file(
-    sprintf('bookdown::%s: default', c('gitbook', 'pdf_book', 'epub_book')), '_output.yml'
-  )
-  write_file(sprintf('book_filename: %s', name), '_bookdown.yml')
 }
 
 #' Continously preview the HTML output of a book using the \pkg{servr} package
@@ -338,18 +285,17 @@ book_skeleton = function(
 #' @param in_session Whether to compile the book using the current R session, or
 #'   always open a new R session to compile the book whenever changes occur in
 #'   the book directory.
-#' @param daemon,... Other arguments passed to \code{servr::\link[servr]{httw}()} (not
+#' @param ... Other arguments passed to \code{servr::\link[servr]{httw}()} (not
 #'   including the \code{handler} argument, which has been set internally).
 #' @export
 serve_book = function(
-  dir = '.', output_dir = '_book', preview = TRUE, in_session = TRUE,
-  daemon = FALSE, ...
+  dir = '.', output_dir = '_book', preview = TRUE, in_session = TRUE, ...
 ) {
   # when this function is called via the RStudio addin, use the dir of the
   # current active document
   if (missing(dir) && requireNamespace('rstudioapi', quietly = TRUE)) {
     context_fun = tryCatch(
-      getFromNamespace('rstudioapi', 'getSourceEditorContext'),
+      getFromNamespace('getSourceEditorContext', 'rstudioapi'),
       error = function(e) rstudioapi::getActiveDocumentContext
     )
     path = context_fun()[['path']]
@@ -362,7 +308,6 @@ serve_book = function(
   }
   if (is.null(output_dir)) output_dir = '_book'
   if (missing(preview)) preview = getOption('bookdown.preview', TRUE)
-  if (missing(daemon)) daemon = getOption('bookdown.serve.daemon', FALSE)
   output_format = first_html_format()
   rebuild = function(..., preview_ = preview) {
     files = grep('[.]R?md$', c(...), value = TRUE, ignore.case = TRUE)
@@ -384,7 +329,7 @@ serve_book = function(
     }
   }
   rebuild('index.Rmd', preview_ = FALSE)  # build the whole book initially
-  servr::httw('.', ..., site.dir = output_dir, handler = rebuild, daemon = daemon)
+  servr::httw('.', ..., site.dir = output_dir, handler = rebuild)
 }
 
 # can only preview HTML output via servr, so look for the first HTML format
@@ -397,29 +342,6 @@ first_html_format = function() {
 }
 
 sans_ext = knitr:::sans_ext
-
-# a simple JSON serializer
-tojson = function(x) {
-  if (is.null(x)) return('null')
-  if (is.logical(x)) {
-    if (length(x) != 1 || any(is.na(x)))
-      stop('Logical values of length > 1 and NA are not supported')
-    return(tolower(as.character(x)))
-  }
-  if (is.character(x) || is.numeric(x)) {
-    return(json_vector(x, length(x) != 1 || inherits(x, 'AsIs'), is.character(x)))
-  }
-  if (is.list(x)) {
-    if (length(x) == 0) return('{}')
-    return(if (is.null(names(x))) {
-      json_vector(unlist(lapply(x, tojson)), TRUE, quote = FALSE)
-    } else {
-      nms = paste0('"', names(x), '"')
-      paste0('{\n', paste(nms, unlist(lapply(x, tojson)), sep = ': ', collapse = ',\n'), '\n}')
-    })
-  }
-  stop('The class of x is not supported: ', paste(class(x), collapse = ', '))
-}
 
 same_path = function(f1, f2, ...) {
   normalizePath(f1, ...) == normalizePath(f2, ...)
@@ -504,7 +426,7 @@ eng_theorem = function(options) {
   name = options$name
   if (length(name) == 1) {
     options$latex.options = sprintf('[%s]', name)
-    html.before2 = paste(html.before2, sprintf('\\iffalse (%s) \\fi ', name))
+    html.before2 = paste(html.before2, sprintf('\\iffalse (%s) \\fi{} ', name))
   }
   options$html.before2 = sprintf(
     '<span class="%s" id="%s"><strong>%s</strong></span>', type, label, html.before2
@@ -519,13 +441,23 @@ eng_proof = function(options) {
     "The type of proof '", type, "' is not supported yet."
   )
   options$type = type
+  label = label_prefix(type, label_names_math2)
   name = options$name
   if (length(name) == 1) {
     options$latex.options = sprintf('[%s]', sub('[.]\\s*$', '', name))
+    r = '^(.+?)([[:punct:][:space:]]+)$'  # "Remark. " -> "Remark (Name). "
+    if (grepl(r, label)) {
+      label1 = gsub(r, '\\1', label)
+      label2 = paste0(' (', name, ')', gsub(r, '\\2', label))
+    } else {
+      label1 = label; label2 = ''
+    }
+    label = sprintf('<em>%s</em>%s', label1, label2)
+  } else {
+    label = sprintf('<em>%s</em>', label)
   }
   options$html.before2 = sprintf(
-    '\\iffalse <span class="%s"><em>%s</em></span> \\fi ', type,
-    if (length(name) == 1) name else label_prefix(type, label_names_math2)
+    '\\iffalse <span class="%s">%s</span> \\fi{} ', type, label
   )
   knitr:::eng_block2(options)
 }

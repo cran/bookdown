@@ -34,7 +34,7 @@ gitbook = function(
     output2 = split_chapters(
       output, gitbook_page, number_sections, split_by, split_bib, gb_config, split_by
     )
-    if (!same_path(output, output2)) file.remove(output)
+    if (file.exists(output) && !same_path(output, output2)) file.remove(output)
     output2
   }
   config$bookdown_output_format = 'html'
@@ -91,7 +91,7 @@ gitbook_page = function(
     link_prev, if (has_next) '' else 'navigation-unique'
   ) else ''
   a_next = if (has_next) sprintf(
-    '<a href="%s" class="navigation navigation-next %s" aria-label="Next page""><i class="fa fa-angle-right"></i></a>',
+    '<a href="%s" class="navigation navigation-next %s" aria-label="Next page"><i class="fa fa-angle-right"></i></a>',
     link_next, if (has_prev) '' else 'navigation-unique'
   ) else ''
   foot = sub('<!--bookdown:link_prev-->', a_prev, foot)
@@ -208,7 +208,7 @@ gitbook_config = function(config = list()) {
   config = utils::modifyList(default, config, keep.null = TRUE)
   # remove these TOC config items since we don't need them in JavaScript
   config$toc$before = NULL; config$toc$after = NULL
-  config = sprintf('gitbook.start(%s);', tojson(config))
+  config = sprintf('gitbook.start(%s);', knitr:::tojson(config))
   paste(
     '<script>', 'require(["gitbook"], function(gitbook) {', config, '});',
     '</script>', sep = '\n'
@@ -234,6 +234,18 @@ download_filenames = function(config) {
     in_dir(output_path('.'), {
       downloads = downloads[file.exists(downloads)]
     })
-  } else downloads = with_ext(book_name, exts)
+  } else {
+    downloads = with_ext(book_name, exts)
+    i = match('rmd', exts)
+    if (!is.na(i)) {
+      r = '^(https://github.com/[^/]+/[^/]+)/edit/'
+      if (is.character(link <- config$edit$link) && grepl(r, link)) {
+        downloads[i] = gsub(r, '\\1/raw/', link)
+      } else {
+        warning('The edit link was not specified, and the download link for RMD will not work')
+        downloads = downloads[-i]
+      }
+    }
+  }
   if (length(downloads)) I(downloads)
 }

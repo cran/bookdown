@@ -66,7 +66,7 @@ html_chapters = function(
     if (is.function(post)) output = post(metadata, input, output, clean, verbose)
     move_files_html(output, lib_dir)
     output2 = split_chapters(output, page_builder, number_sections, split_by, split_bib)
-    if (!same_path(output, output2)) file.remove(output)
+    if (file.exists(output) && !same_path(output, output2)) file.remove(output)
     output2
   }
   config$bookdown_output_format = 'html'
@@ -238,7 +238,7 @@ split_chapters = function(output, build = build_chapter, number_sections, split_
     writeUTF8(build(
       html_head, html_toc, c(html_title, html_body), NULL, NULL, NULL, output, html_foot, ...
     ), output)
-    return(output)
+    return(move_to_output_dir(output))
   }
 
   if (split_bib) {
@@ -261,6 +261,10 @@ split_chapters = function(output, build = build_chapter, number_sections, split_
   } else {
     h1 = grep('^<div (id="[^"]+" )?class="section level1("| )', html_body)
     h2 = grep('^<div (id="[^"]+" )?class="section level2("| )', html_body)
+    if (length(h1) < length(nms)) warning(
+      'You have ', length(nms), ' Rmd input file(s) but only ', length(h1),
+      ' first-level heading(s). Did you forget first-level headings in certain Rmd files?'
+    )
     idx2 = if (split_level == 1) h1 else if (split_level == 2) {
       h12 = setNames(c(h1, h2), rep(c('h1', 'h2'), c(length(h1), length(h2))))
       if (length(h12) > 0 && h12[1] != 1) stop(
@@ -352,17 +356,21 @@ split_chapters = function(output, build = build_chapter, number_sections, split_
     )
     writeUTF8(html, nms[i])
   }
-  # move HTML files to output dir
-  nms2 = output_path(nms)
-  i = file.exists(nms) & (nms != nms2)
-  file.rename(nms[i], nms2[i])
-  nms = nms2
+  nms = move_to_output_dir(nms)
 
   # find the HTML output file corresponding to the Rmd file passed to render_book()
   if (is.null(input) || length(nms_chaps) == 0) j = 1 else {
     if (is.na(j <- match(input[1], nms_chaps))) j = 1
   }
   nms[j]
+}
+
+# move files to output dir if specified
+move_to_output_dir = function(files) {
+  files2 = output_path(files)
+  i = file.exists(files) & (files != files2)
+  file.rename(files[i], files2[i])
+  files2
 }
 
 find_token = function(x, token) {
@@ -456,6 +464,7 @@ label_names_math = setNames(list(
 ), theorem_abbr)
 # unnumbered math environments
 label_names_math2 = list(proof = 'Proof. ', remark = 'Remark. ')
+all_math_env = c(names(theorem_abbr), names(label_names_math2))
 
 label_names = c(label_names, label_names_math)
 
@@ -509,7 +518,7 @@ parse_fig_labels = function(content, global = FALSE) {
       k = max(figs[figs <= i])
       content[k] = paste0(content[k], sprintf('<span id="%s"></span>', lab))
     }, tab = {
-      if (length(grep('^<caption>', content[i - 0:1])) == 0) next
+      if (length(grep('^<caption', content[i - 0:1])) == 0) next
       labs[[i]] = sprintf(
         '<span id="%s">%s</span>', lab, paste0(label_prefix(type), num, ': ')
       )
@@ -570,7 +579,7 @@ reg_ref_links = '(\\(ref:[-/[:alnum:]]+\\))'
 resolve_ref_links_html = function(x) {
   res = parse_ref_links(x, '^<p>%s (.+)</p>$')
   if (is.null(res)) return(x)
-  restore_ref_links(res$content, '(?<!>)%s', res$tags, res$txts, TRUE)
+  restore_ref_links(res$content, '(?<!code>)%s', res$tags, res$txts, TRUE)
 }
 
 parse_ref_links = function(x, regexp) {
@@ -578,6 +587,13 @@ parse_ref_links = function(x, regexp) {
   if (length(i <- grep(r, x)) == 0) return()
   tags = gsub(r, '\\1', x[i])
   txts = gsub(r, '\\2', x[i])
+  if (any(k <- duplicated(tags))) {
+    warning('Possibly duplicated text reference labels: ', paste(tags[k], collapse = ', '))
+    k = !k
+    tags = tags[k]
+    txts = txts[k]
+    i = i[k]
+  }
   x[i] = ''
   list(content = x, tags = tags, txts = txts, matches = i)
 }
@@ -637,7 +653,7 @@ add_toc_ids = function(toc) {
 add_chapter_prefix = function(content) {
   config = load_config()
   chapter_name = config[['chapter_name']] %n% ui_language('chapter_name')
-  if (is.null(chapter_name) || chapter_name == '') return(content)
+  if (is.null(chapter_name) || identical(chapter_name, '')) return(content)
   chapter_fun = if (is.character(chapter_name)) {
     function(i) switch(
       length(chapter_name), paste0(chapter_name, i),
@@ -680,17 +696,25 @@ restore_links = function(segment, full, lines, filenames) {
 }
 
 restore_part_html = function(x, remove = TRUE) {
-  i = grep('^<h1>\\(PART\\) .+</h1>$', x)
+  i = grep('^<h1>\\(PART\\*?\\) .+</h1>$', x)
   if (length(i) == 0) return(x)
   i = i[grep('^<div .*class=".*unnumbered.*">$', x[i - 1])]
   if (remove) {
     x[i] = x[i - 1] = x[i + 1] = ''
   } else {
-    x[i] = mapply(
-      gsub, '<h1>\\(PART\\)', x = x[i],
-      sprintf('<h1><span class="header-section-number">%s</span>', as.roman(seq_along(i)))
+    k = grepl('^<h1>\\(PART\\*\\) .+</h1>$', x[i])  # unnumbered parts
+    i1 = i[k]; i2 = i[!k]
+    x[i1] = gsub('<h1>\\(PART\\*\\)', '<h1>', x[i1])
+    x[i2] = mapply(
+      gsub, '<h1>\\(PART\\)', x = x[i2],
+      sprintf('<h1><span class="header-section-number">%s</span>', as.roman(seq_along(i2)))
     )
   }
+
+  r = '^<li><a href="[^"]*">\\(PART\\*\\) (.+)</a>(.+)$'
+  i = grep(r, x)
+  x[i] = gsub(r, '<li class="part"><span><b>\\1</b></span>\\2', x[i])
+
   r = '^<li><a href="[^"]*">\\(PART\\) (.+)</a>(.+)$'
   i = grep(r, x)
   if (length(i) == 0) return(x)
@@ -815,7 +839,7 @@ move_files_html = function(output, lib_dir) {
   if (is.null(o <- opts$get('output_dir'))) return()
   x = readUTF8(output)
   # detect local resources used in HTML
-  r = ' (src|href)="([^"]+)"'
+  r = '[- ](src|href)="([^"]+)"'
   m = gregexpr(r, x)
   f = unlist(lapply(regmatches(x, m), function(z) {
     if (length(z) == 0) z else gsub(r, '\\2', z)
@@ -843,9 +867,11 @@ move_files_html = function(output, lib_dir) {
     list.files(lib_dir, '^leaflet', full.names = TRUE),
     full.names = TRUE, recursive = TRUE
   ), value = TRUE))
-  f = unique(f[file.exists(f)])
+  f = unique(f[file_test('-f', f)])
   lapply(file.path(o, setdiff(dirname(f), '.')), dir_create)
-  file.copy(f, file.path(o, f), overwrite = TRUE)
+  f2 = file.path(o, f)
+  i = !same_path(f, f2, mustWork = FALSE)
+  if (any(i)) file.copy(f[i], f2[i], overwrite = TRUE)
   # should not need the lib dir any more
   if (length(lib_dir) == 1 && is.character(lib_dir))
     unlink(lib_dir, recursive = TRUE)
@@ -878,8 +904,22 @@ js_min_sources = function(x) {
 restore_math_labels = function(x) {
   i1 = grep('^(<[a-z]+>)?<span class="math display">\\\\\\[', x)
   i2 = grep('\\\\\\]</span>(</[a-z]+>)?$', x)
-  if (length(i1) * length(i2) == 0) return(x)
-  i = unlist(mapply(seq, i1, next_nearest(i1, i2, TRUE), SIMPLIFY = FALSE))
+  n1 = length(i1); n2 = length(i2)
+  if (n1 * n2 == 0) return(x)
+  i2 = next_nearest(i1, i2, TRUE)
+  if (any(is.na(i2))) {
+    # retry without assuming the closing \]</span> is only followed by an optional </tag>
+    i2 = grep('\\\\\\]</span>(</[a-z]+>)?', x)
+    i2 = next_nearest(i1, i2, TRUE)
+    if (any(is.na(i2))) {
+      warning(
+        "There seems to be problems with math expressions of the display style. ",
+        "Labels of these expressions will not be processed."
+      )
+      return(x)
+    }
+  }
+  i = unlist(mapply(seq, i1, i2, SIMPLIFY = FALSE))
   # remove \ before #
   x[i] = gsub('\\(\\\\(#eq:[-/[:alnum:]]+)\\)', '(\\1)', x[i])
   x

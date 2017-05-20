@@ -1,6 +1,6 @@
 #' Render multiple R Markdown documents into a book
 #'
-#' Render mulitple R Markdown files under the current working directory into a
+#' Render multiple R Markdown files under the current working directory into a
 #' book. It can be used in the RStudio IDE (specifically, the \code{knit} field
 #' in YAML). The \code{preview_chapter()} function is a wrapper of
 #' \code{render_book(preview = TRUE)}.
@@ -20,7 +20,7 @@
 #'   the book in a non-interactive R session.
 #' @param output_dir The output directory. If \code{NULL}, a field named
 #'   \code{output_dir} in the configuration file \file{_bookdown.yml} will be
-#'   used (possiblely not specified, either, in which case a directory name
+#'   used (possibly not specified, either, in which case a directory name
 #'   \file{_book} will be used).
 #' @param new_session Whether to use new R sessions to compile individual Rmd
 #'   files (if not provided, the value of the \code{new_session} option in
@@ -92,6 +92,13 @@ render_book = function(
 
   main = book_filename()
   if (!grepl('[.][a-zA-Z]+$', main)) main = paste0(main, if (new_session) '.md' else '.Rmd')
+  if (file.exists(main)) stop(
+    'The file ', main, ' exists. Please delete it if it was automatically generated, ',
+    'or set a different book_filename option in _bookdown.yml.'
+  )
+  on.exit(if (file.exists(main)) {
+    message('Please delete ', main, ' after you finish debugging the error.')
+  }, add = TRUE)
   opts$set(book_filename = main)  # store the book filename
 
   files = setdiff(source_files(format, config), main)
