@@ -159,9 +159,13 @@ match_dashes = function(x) grep('^---\\s*$', x)
 
 create_placeholder = function(x) {
   h = grep('^# ', x, value = TRUE)  # chapter title
-  h1 = grep(reg_part, h, value = TRUE)
-  h2 = setdiff(h, h1)
-  c('', if (length(h1)) h1[1], if (length(h2)) h2[1] else '# Placeholder')
+  h1 = grep(reg_part, h, value = TRUE)  # part title
+  h2 = grep(reg_app, h, value = TRUE)   # appendix title
+  h3 = setdiff(h, c(h1, h2))
+  h4 = grep('^#{2,} ', x, value = TRUE)  # section/subsection/... titles
+  c(
+    '', head(h1, 1), head(h2, 1), if (length(h3)) h3[1] else '# Placeholder', h4
+  )
 }
 
 fetch_yaml = function(x) {
@@ -198,8 +202,8 @@ check_special_chars = function(filename) {
   filename
 }
 
-Rscript = function(args) {
-  system2(file.path(R.home('bin'), 'Rscript'), args)
+Rscript = function(args, ...) {
+  system2(file.path(R.home('bin'), 'Rscript'), args, ...)
 }
 
 Rscript_render = function(file, ...) {
@@ -218,6 +222,7 @@ clean_meta = function(meta_file, files) {
 
 # remove HTML tags and remove extra spaces
 strip_html = function(x) {
+  x = gsub('<!--.*?-->', '', x)  # remove comments
   x = gsub('<[^>]+>', '', x)
   x = gsub('\\s{2,}', ' ', x)
   x
@@ -414,6 +419,8 @@ str_trim = function(x) gsub('^\\s+|\\s+$', '', x)
 
 `%n%` = knitr:::`%n%`
 
+output_md = function() getOption('bookdown.output.markdown', FALSE)
+
 # a theorem engine for knitr (can also be used for lemmas, definitions, etc)
 eng_theorem = function(options) {
   type = options$type %n% 'theorem'
@@ -422,16 +429,20 @@ eng_theorem = function(options) {
   )
   options$type = type
   label = paste(theorem_abbr[type], options$label, sep = ':')
-  html.before2 = sprintf('(\\#%s)', label)
-  name = options$name
+  html.before2 = sprintf('(\\#%s) ', label)
+  name = options$name; to_md = output_md()
   if (length(name) == 1) {
-    options$latex.options = sprintf('[%s]', name)
-    html.before2 = paste(html.before2, sprintf('\\iffalse (%s) \\fi{} ', name))
+    if (to_md) {
+      html.before2 = paste(html.before2, sprintf('(%s) ', name))
+    } else {
+      options$latex.options = sprintf('[%s]', name)
+      html.before2 = paste(html.before2, sprintf('\\iffalse (%s) \\fi{} ', name))
+    }
   }
   options$html.before2 = sprintf(
     '<span class="%s" id="%s"><strong>%s</strong></span>', type, label, html.before2
   )
-  knitr:::eng_block2(options)
+  process_block(options, to_md)
 }
 
 # a proof engine for unnumbered math environments
@@ -442,9 +453,9 @@ eng_proof = function(options) {
   )
   options$type = type
   label = label_prefix(type, label_names_math2)
-  name = options$name
+  name = options$name; to_md = output_md()
   if (length(name) == 1) {
-    options$latex.options = sprintf('[%s]', sub('[.]\\s*$', '', name))
+    if (!to_md) options$latex.options = sprintf('[%s]', sub('[.]\\s*$', '', name))
     r = '^(.+?)([[:punct:][:space:]]+)$'  # "Remark. " -> "Remark (Name). "
     if (grepl(r, label)) {
       label1 = gsub(r, '\\1', label)
@@ -457,8 +468,20 @@ eng_proof = function(options) {
     label = sprintf('<em>%s</em>', label)
   }
   options$html.before2 = sprintf(
-    '\\iffalse <span class="%s">%s</span> \\fi{} ', type, label
+    '<span class="%s">%s</span> ', type, label
   )
+  if (!to_md) options$html.before2 = paste('\\iffalse{}', options$html.before2, '\\fi{}')
+  process_block(options, to_md)
+}
+
+process_block = function(options, md) {
+  if (md) {
+    code = options$code
+    code = knitr:::pandoc_fragment(code)
+    r = '^<p>(.+)</p>$'
+    if (length(code) > 0 && grepl(r, code[1])) code[1] = gsub(r, '\\1', code[1])
+    options$code = code
+  }
   knitr:::eng_block2(options)
 }
 
