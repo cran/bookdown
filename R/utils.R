@@ -11,20 +11,6 @@ next_nearest = function(x, y, allow_eq = FALSE) {
   z
 }
 
-# change the filename extension
-with_ext = function(x, ext) {
-  n1 = length(x); n2 = length(ext); r = '([.][[:alnum:]]+)?$'
-  if (n1 * n2 == 0) return(x)
-  i = !(grepl('^[.]', ext) | ext == '')
-  ext[i] = paste0('.', ext[i])
-
-  if (all(ext == '')) ext = ''
-  if (length(ext) == 1) return(sub(r, ext, x))
-
-  if (n1 > 1 && n1 != n2) stop("'ext' must be of the same length as 'x'")
-  mapply(sub, r, ext, x, USE.NAMES = FALSE)
-}
-
 # counters for figures/tables
 new_counters = function(type, rownames) {
   base = matrix(
@@ -46,26 +32,6 @@ set_opts_knit = function(config) {
   # http://tex.stackexchange.com/q/276699/9128
   config$knitr$opts_knit$kable.force.latex = TRUE
   config
-}
-
-readUTF8 = function(input) {
-  x = readLines(input, encoding = 'UTF-8', warn = FALSE)
-  i = invalidUTF8(x)
-  n = length(i)
-  if (n > 0) warning(
-    'The file ', input, ' is not encoded in UTF-8. These lines contain invalid ',
-    'UTF-8 characters: ', paste(c(head(i), if (n > 6) '...'), collapse = ', ')
-  )
-  x
-}
-
-writeUTF8 = function(text, ...) {
-  writeLines(enc2utf8(text), ..., useBytes = TRUE)
-}
-
-# which lines are invalid UTF-8
-invalidUTF8 = function(x) {
-  which(is.na(iconv(x, 'UTF-8', 'UTF-8')))
 }
 
 get_base_format = function(format) {
@@ -118,7 +84,7 @@ output_dirname = function(dir, config = load_config(), create = TRUE) {
   if (length(dir)) {
     if (create) dir_create(dir)
     # ignore dir that is just the current working directory
-    if (same_path(dir, getwd(), mustWork = FALSE)) dir = NULL
+    if (same_path(dir, getwd())) dir = NULL
   }
   dir
 }
@@ -142,16 +108,18 @@ merge_chapters = function(files, to, before = NULL, after = NULL, orig = files) 
   # in the preview mode, only use some placeholder text instead of the full Rmd
   preview = opts$get('preview'); input = opts$get('input_rmd')
   content = unlist(mapply(files, orig, SIMPLIFY = FALSE, FUN = function(f, o) {
-    x = readUTF8(f)
+    x = read_utf8(f)
+    # if a chapter is short enough (<= 30 lines), just include the full chapter for preview
+    preview = preview && length(x) >= getOption('bookdown.preview.cutoff', 30)
     x = if (preview && !(o %in% input)) create_placeholder(x) else {
       insert_code_chunk(x, before, after)
     }
     c(x, '', paste0('<!--chapter:end:', o, '-->'), '')
   }))
   if (preview && !(files[1] %in% input))
-    content = c(fetch_yaml(readUTF8(files[1])), content)
+    content = c(fetch_yaml(read_utf8(files[1])), content)
   unlink(to)
-  writeUTF8(content, to)
+  write_utf8(content, to)
   Sys.chmod(to, '644')
 }
 
@@ -164,8 +132,14 @@ create_placeholder = function(x) {
   h3 = setdiff(h, c(h1, h2))
   h4 = grep('^#{2,} ', x, value = TRUE)  # section/subsection/... titles
   c(
-    '', head(h1, 1), head(h2, 1), if (length(h3)) h3[1] else '# Placeholder', h4
+    '', placeholder(head(h1, 1)), placeholder(head(h2, 1)),
+    placeholder(h3[1]), '', h4
   )
+}
+
+# x1: the title; x2: placeholder if title is empty
+placeholder = function(x1, x2 = NULL) {
+  if (length(x1) && !is.na(x1)) c(x1, '\nPlaceholder\n') else x2
 }
 
 fetch_yaml = function(x) {
@@ -188,7 +162,7 @@ insert_code_chunk = function(x, before, after) {
 insert_chapter_script = function(config, where = 'before') {
   script = config[[sprintf('%s_chapter_script', where)]]
   if (is.character(script)) {
-    c('```{r include=FALSE, cache=FALSE}', unlist(lapply(script, readUTF8)), '```')
+    c('```{r include=FALSE, cache=FALSE}', unlist(lapply(script, read_utf8)), '```')
   }
 }
 
@@ -346,17 +320,9 @@ first_html_format = function() {
   if (length(formats) == 0) fallback else formats[1]
 }
 
-sans_ext = knitr:::sans_ext
-
-same_path = function(f1, f2, ...) {
-  normalizePath(f1, ...) == normalizePath(f2, ...)
-}
-
-in_dir = knitr:::in_dir
-
 # base64 encode resources in url("")
 base64_css = function(css, exts = 'png', overwrite = FALSE) {
-  x = readUTF8(css)
+  x = read_utf8(css)
   r = sprintf('[.](%s)$', paste(exts, collapse = '|'))
   m = gregexpr('url\\("[^"]+"\\)', x)
   regmatches(x, m) = lapply(regmatches(x, m), function(ps) {
@@ -366,7 +332,7 @@ base64_css = function(css, exts = 'png', overwrite = FALSE) {
       if (grepl(r, p) && file.exists(p)) knitr::image_uri(p) else p
     }))
   })
-  if (overwrite) writeUTF8(x, css) else x
+  if (overwrite) write_utf8(x, css) else x
 }
 
 files_cache_dirs = function(dir = '.') {
@@ -493,3 +459,5 @@ register_eng_math = function(envs, engine) {
     }
   }), envs))
 }
+
+pandoc2.0 = function() rmarkdown::pandoc_available('2.0')

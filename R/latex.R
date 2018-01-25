@@ -45,7 +45,7 @@ pdf_book = function(
   config$post_processor = function(metadata, input, output, clean, verbose) {
     if (is.function(post)) output = post(metadata, input, output, clean, verbose)
     f = with_ext(output, '.tex')
-    x = resolve_refs_latex(readUTF8(f))
+    x = resolve_refs_latex(read_utf8(f))
     x = resolve_ref_links_latex(x)
     x = restore_part_latex(x)
     x = restore_appendix_latex(x, toc_appendix)
@@ -60,9 +60,9 @@ pdf_book = function(
     if (highlight_bw) x = highlight_grayscale_latex(x)
     post = getOption('bookdown.post.latex')
     if (is.function(post)) x = post(x)
-    writeUTF8(x, f)
+    write_utf8(x, f)
     latexmk(f, config$pandoc$latex_engine)
-    unlink(with_ext(output, 'bbl'))  # not sure why latexmk left a .bbl there
+    unlink(with_ext(output, c('bbl', 'run.xml'))) # clean up after latexmk (and biber)
 
     output = with_ext(output, '.pdf')
     o = opts$get('output_dir')
@@ -165,10 +165,12 @@ restore_appendix_latex = function(x, toc = FALSE) {
   i = find_appendix_line(r, x)
   if (length(i) == 0) return(x)
   level = gsub(r, '\\1', x[i])
+  brace = grepl('}}$', x[i])
   x[i] = '\\appendix'
   if (toc) x[i] = paste(
     x[i], sprintf('\\addcontentsline{toc}{%s}{\\appendixname}', level)
   )
+  if (brace) x[i] = paste0(x[i], '}')  # pandoc 2.0
   if (grepl('^\\\\addcontentsline', x[i + 1])) x[i + 1] = ''
   x
 }
@@ -272,8 +274,8 @@ highlight_grayscale_latex = function(x) {
   r1 = '^\\\\newcommand\\{\\\\[a-zA-Z]+\\}\\[1]\\{.*\\{#1\\}.*\\}$'
   r2 = '^(.*?)([.0-9]+,[.0-9]+,[.0-9]+)(.*)$'
   i = i1 + 1
-  while (grepl(r1, x[i])) {
-    if (grepl(r2, x[i])) {
+  while (grepl('^\\\\newcommand\\{.+\\}$', x[i])) {
+    if (grepl(r1, x[i]) && grepl(r2, x[i])) {
       col = as.numeric(strsplit(gsub(r2, '\\2', x[i]), ',')[[1]])
       x[i] = gsub(
         r2, paste0('\\1', paste(round(rgb2gray(col), 2), collapse = ','), '\\3'),

@@ -8,7 +8,7 @@
 \usage{
 html_chapters(toc = TRUE, number_sections = TRUE, fig_caption = TRUE, 
     lib_dir = "libs", template = bookdown_file("templates/default.html"), 
-    ..., base_format = rmarkdown::html_document, split_bib = TRUE, 
+    pandoc_args = NULL, ..., base_format = rmarkdown::html_document, split_bib = TRUE, 
     page_builder = build_chapter, split_by = c("section+number", "section", 
         "chapter+number", "chapter", "rmd", "none"))
 
@@ -17,7 +17,7 @@ html_book(...)
 tufte_html_book(...)
 }
 \arguments{
-\item{toc, number_sections, fig_caption, lib_dir, template}{See
+\item{toc, number_sections, fig_caption, lib_dir, template, pandoc_args}{See
 \code{rmarkdown::\link{html_document}},
 \code{tufte::\link[tufte]{tufte_html}}, or the documentation of the
 \code{base_format} function.}

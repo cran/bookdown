@@ -32,11 +32,12 @@
 #'   accurate (e.g. cross-references to other chapters will not work).
 #' @param encoding Ignored. The character encoding of all input files is
 #'   supposed to be UTF-8.
+#' @param config_file The book configuration file.
 #' @export
 render_book = function(
   input, output_format = NULL, ..., clean = TRUE, envir = parent.frame(),
   clean_envir = !interactive(), output_dir = NULL, new_session = NA,
-  preview = FALSE, encoding = 'UTF-8'
+  preview = FALSE, encoding = 'UTF-8', config_file = '_bookdown.yml'
 ) {
 
   verify_rstudio_version()
@@ -51,13 +52,23 @@ render_book = function(
     if (length(output_format) > 1) {
       return(unlist(lapply(output_format, function(fmt) render_book(
         input, fmt, ..., clean = clean, envir = envir, output_dir = output_dir,
-        new_session = new_session, preview = preview
+        new_session = new_session, preview = preview, config_file = config_file
       ))))
     }
     format = html_or_latex(output_format)
   }
 
   if (clean_envir) rm(list = ls(envir, all.names = TRUE), envir = envir)
+
+  if (config_file != '_bookdown.yml') {
+    unlink(tmp_config <- tempfile('_bookdown_', '.', '.yml'))
+    if (file.exists('_bookdown.yml')) file.rename('_bookdown.yml', tmp_config)
+    file.rename(config_file, '_bookdown.yml')
+    on.exit({
+      file.rename('_bookdown.yml', config_file)
+      if (file.exists(tmp_config)) file.rename(tmp_config, '_bookdown.yml')
+    }, add = TRUE)
+  }
 
   on.exit(opts$restore(), add = TRUE)
   config = load_config()  # configurations in _bookdown.yml
@@ -96,7 +107,7 @@ render_book = function(
   if (file.exists(main) && !delete_main) stop(
     'The file ', main, ' exists. Please delete it if it was automatically generated, ',
     'or set a different book_filename option in _bookdown.yml. If you are sure ',
-    "it can be safely deleted, please set the option 'delete_merged_file' to true in _bookdown.yaml."
+    "it can be safely deleted, please set the option 'delete_merged_file' to true in _bookdown.yml."
   )
   on.exit(if (file.exists(main) && !delete_main) {
     message('Please delete ', main, ' after you finish debugging the error.')
@@ -168,8 +179,8 @@ render_new_session = function(files, main, config, output_format, clean, envir, 
     file.copy(f, f2, overwrite = TRUE)
     # write add1/add2 to the original Rmd, compile it, and restore it
     tryCatch({
-      txt = c(add1, readUTF8(f), add2)
-      writeUTF8(txt, f)
+      txt = c(add1, read_utf8(f), add2)
+      write_utf8(txt, f)
       Rscript_render(f, render_args, render_meta)
     }, finally = {
       if (file.copy(f2, f, overwrite = TRUE)) unlink(f2)
