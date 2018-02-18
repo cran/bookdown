@@ -167,7 +167,7 @@ insert_chapter_script = function(config, where = 'before') {
 }
 
 check_special_chars = function(filename) {
-  reg = getFromNamespace('.shell_chars_regex', 'rmarkdown')
+  reg = rmarkdown:::.shell_chars_regex
   for (i in grep(reg, filename)) warning(
     'The filename "', filename[i], '" contains special characters. ',
     'You may rename it to, e.g., "', gsub(reg, '-', filename[i]), '".'
@@ -176,6 +176,7 @@ check_special_chars = function(filename) {
   filename
 }
 
+# TODO: use xfun::Rscript
 Rscript = function(args, ...) {
   system2(file.path(R.home('bin'), 'Rscript'), args, ...)
 }
@@ -208,11 +209,6 @@ strip_search_text = function(x) {
   x = gsub('<div id="refs" class="references">.*', '', x)
   x = strip_html(x)
   x
-}
-
-# quote a string and escape backslashes/double quotes
-json_string = function(x, toArray = FALSE) {
-  knitr:::json_vector(x, toArray)
 }
 
 # manipulate internal options
@@ -273,11 +269,7 @@ serve_book = function(
   # when this function is called via the RStudio addin, use the dir of the
   # current active document
   if (missing(dir) && requireNamespace('rstudioapi', quietly = TRUE)) {
-    context_fun = tryCatch(
-      getFromNamespace('getSourceEditorContext', 'rstudioapi'),
-      error = function(e) rstudioapi::getActiveDocumentContext
-    )
-    path = context_fun()[['path']]
+    path = rstudioapi::getSourceEditorContext()[['path']]
     if (!(is.null(path) || path == '')) dir = dirname(path)
   }
   owd = setwd(dir); on.exit(setwd(owd), add = TRUE)

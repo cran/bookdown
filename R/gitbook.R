@@ -64,7 +64,7 @@ write_search_data = function(x) {
   if (length(x) == 0) return()
   gitbook_search$empty()
   x = matrix(strip_search_text(x), nrow = 3)
-  x = apply(x, 2, json_string, toArray = TRUE)
+  x = apply(x, 2, xfun::json_vector, to_array = TRUE)
   x = paste0('[\n', paste0(x, collapse = ',\n'), '\n]')
   write_utf8(x, output_path('search_index.json'))
 }
@@ -204,8 +204,8 @@ gitbook_config = function(config = list()) {
   default = list(
     sharing = list(
       github = FALSE, facebook = TRUE, twitter = TRUE, google = FALSE,
-      weibo = FALSE, instapper = FALSE, vk = FALSE,
-      all = c('facebook', 'google', 'twitter', 'weibo', 'instapaper')
+      linkedin = FALSE, weibo = FALSE, instapper = FALSE, vk = FALSE,
+      all = c('facebook', 'google', 'twitter', 'linkedin', 'weibo', 'instapaper')
     ),
     fontsettings = list(theme = 'white', family = 'sans', size = 2),
     edit = list(link = NULL, text = NULL),
@@ -216,7 +216,7 @@ gitbook_config = function(config = list()) {
   config = utils::modifyList(default, config, keep.null = TRUE)
   # remove these TOC config items since we don't need them in JavaScript
   config$toc$before = NULL; config$toc$after = NULL
-  config = sprintf('gitbook.start(%s);', knitr:::tojson(config))
+  config = sprintf('gitbook.start(%s);', xfun::tojson(config))
   paste(
     '<script>', 'gitbook.require(["gitbook"], function(gitbook) {', config, '});',
     '</script>', sep = '\n'
