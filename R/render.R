@@ -34,6 +34,9 @@
 #'   supposed to be UTF-8.
 #' @param config_file The book configuration file.
 #' @export
+#' @examples
+#' # see https://bookdown.org/yihui/bookdown for the full documentation
+#' if (file.exists('index.Rmd')) bookdown::render_book('index.Rmd')
 render_book = function(
   input, output_format = NULL, ..., clean = TRUE, envir = parent.frame(),
   clean_envir = !interactive(), output_dir = NULL, new_session = NA,
@@ -128,7 +131,7 @@ render_book = function(
   } else {
     render_cur_session(files, main, config, output_format, clean, envir, ...)
   }
-  unlink(main)
+  file.remove(main)
   res
 }
 
@@ -151,7 +154,7 @@ render_new_session = function(files, main, config, output_format, clean, envir, 
 
   # save a copy of render arguments in a temp file
   render_args = tempfile('render', '.', '.rds')
-  on.exit(unlink(render_args), add = TRUE)
+  on.exit(file.remove(render_args), add = TRUE)
   saveRDS(
     list(output_format = output_format, ..., clean = FALSE, envir = envir),
     render_args
@@ -175,7 +178,7 @@ render_new_session = function(files, main, config, output_format, clean, envir, 
       next
     }
     # first backup the original Rmd to a tempfile
-    f2 = tempfile('bookdown', '.')
+    f2 = tempfile('bookdown', '.', fileext = '.bak')
     file.copy(f, f2, overwrite = TRUE)
     # write add1/add2 to the original Rmd, compile it, and restore it
     tryCatch({
@@ -183,7 +186,7 @@ render_new_session = function(files, main, config, output_format, clean, envir, 
       write_utf8(txt, f)
       Rscript_render(f, render_args, render_meta)
     }, finally = {
-      if (file.copy(f2, f, overwrite = TRUE)) unlink(f2)
+      if (file.copy(f2, f, overwrite = TRUE)) file.remove(f2)
     })
   }
   if (!all(dirname(files_md) == '.'))

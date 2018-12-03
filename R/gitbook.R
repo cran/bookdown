@@ -5,34 +5,40 @@
 #' @inheritParams html_chapters
 #' @param fig_caption,number_sections,self_contained,lib_dir,pandoc_args ...
 #'   Arguments to be passed to \code{rmarkdown::\link{html_document}()}
-#'   (\code{...} not including \code{toc}, \code{theme}, and \code{template}).
+#'   (\code{...} not including \code{toc}, and \code{theme}).
+#' @param template Pandoc template to use for rendering. Pass \code{"default"}
+#'   to use the bookdown default template; pass a path to use a custom template.
+#'   The default template should be sufficient for most use cases. In case you
+#'   want to develop a custom template, we highly recommend to start from the
+#'   default template:
+#'   \url{https://github.com/rstudio/bookdown/blob/master/inst/templates/gitbook.html}.
+#'
 #' @param config A list of configuration options for the gitbook style, such as
 #'   the font/theme settings.
+#' @param table_css \code{TRUE} to load gitbook's default CSS for tables. Choose
+#' \code{FALSE} to unload and use customized CSS (for exmaple, bootstrap) via
+#' the \code{css} option. Default is \code{TRUE}.
 #' @export
 gitbook = function(
   fig_caption = TRUE, number_sections = TRUE, self_contained = FALSE,
-  lib_dir = 'libs', pandoc_args = NULL, ...,
+  lib_dir = 'libs', pandoc_args = NULL, ..., template = 'default',
   split_by = c('chapter', 'chapter+number', 'section', 'section+number', 'rmd', 'none'),
-  split_bib = TRUE, config = list()
+  split_bib = TRUE, config = list(), table_css = TRUE
 ) {
   html_document2 = function(..., extra_dependencies = list()) {
     rmarkdown::html_document(
-      ..., extra_dependencies = c(extra_dependencies, gitbook_dependency())
+      ..., extra_dependencies = c(extra_dependencies, gitbook_dependency(table_css))
     )
   }
   gb_config = config
+  if (identical(template, 'default')) {
+    template = bookdown_file('templates', 'gitbook.html')
+  }
   config = html_document2(
     toc = TRUE, number_sections = number_sections, fig_caption = fig_caption,
     self_contained = self_contained, lib_dir = lib_dir, theme = NULL,
-    template = bookdown_file('templates', 'gitbook.html'),
-    pandoc_args = pandoc_args2(pandoc_args), ...
+    template = template, pandoc_args = pandoc_args2(pandoc_args), ...
   )
-  # Pandoc 2.0 starts to use <section> instead of <div> for html (defaults to
-  # html5) output, but unfortunately bookdown heavily relies on <div>, so we
-  # have to use html4
-  if (pandoc2.0()) {
-    config$pandoc$to = 'html4'; config$pandoc$ext = '.html'
-  }
   split_by = match.arg(split_by)
   post = config$post_processor  # in case a post processor have been defined
   config$post_processor = function(metadata, input, output, clean, verbose) {
@@ -59,7 +65,7 @@ gitbook_search = local({
   )
 })
 
-write_search_data = function(x) {
+write_search_data = function() {
   x = gitbook_search$get()
   if (length(x) == 0) return()
   gitbook_search$empty()
@@ -69,15 +75,15 @@ write_search_data = function(x) {
   write_utf8(x, output_path('search_index.json'))
 }
 
-gitbook_dependency = function() {
+gitbook_dependency = function(table_css) {
   assets = bookdown_file('resources', 'gitbook')
   owd = setwd(assets); on.exit(setwd(owd), add = TRUE)
   app = if (file.exists('js/app.min.js')) 'app.min.js' else 'app.js'
   list(jquery_dependency(), htmltools::htmlDependency(
     'gitbook', '2.6.7', src = assets,
     stylesheet = file.path('css', c(
-      'style.css', 'plugin-bookdown.css', 'plugin-highlight.css',
-      'plugin-search.css', 'plugin-fontsettings.css'
+      'style.css', if (table_css) 'plugin-table.css', 'plugin-bookdown.css',
+      'plugin-highlight.css', 'plugin-search.css', 'plugin-fontsettings.css'
     )),
     script = file.path('js', c(
       app, 'lunr.js', 'plugin-search.js', 'plugin-sharing.js',
@@ -132,9 +138,12 @@ gitbook_page = function(
   }
 
   # you can set the edit setting in either _bookdown.yml or _output.yml
-  if (is.list(setting <- edit_setting(config$edit))) config$edit = setting
-  if (length(rmd_cur) && is.list(config$edit))
-    config$edit$link = sprintf(config$edit$link, rmd_cur)
+  for (type in c('edit', 'history')) {
+    if (is.list(setting <- source_link_setting(config[[type]], type = type)))
+      config[[type]] = setting
+    if (length(rmd_cur) && is.list(config[[type]]))
+      config[[type]][["link"]] = sprintf(config[[type]]$link, rmd_cur)
+  }
 
   config$download = download_filenames(config)
 
@@ -204,11 +213,12 @@ gitbook_config = function(config = list()) {
   default = list(
     sharing = list(
       github = FALSE, facebook = TRUE, twitter = TRUE, google = FALSE,
-      linkedin = FALSE, weibo = FALSE, instapper = FALSE, vk = FALSE,
+      linkedin = FALSE, weibo = FALSE, instapaper = FALSE, vk = FALSE,
       all = c('facebook', 'google', 'twitter', 'linkedin', 'weibo', 'instapaper')
     ),
     fontsettings = list(theme = 'white', family = 'sans', size = 2),
     edit = list(link = NULL, text = NULL),
+    history = list(link = NULL, text = NULL),
     download = NULL,
     # toolbar = list(position = 'static'),
     toc = list(collapse = 'subsection')

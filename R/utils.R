@@ -58,20 +58,24 @@ book_filename = function(config = load_config(), fallback = TRUE) {
 
 source_files = function(format = NULL, config = load_config(), all = FALSE) {
   # a list of Rmd chapters
-  files = list.files(
-    '.', '[.]Rmd$', ignore.case = TRUE, recursive = isTRUE(config[['rmd_subdir']])
-  )
-  if (length(config[['rmd_files']]) > 0) {
-    files = config[['rmd_files']]
-    if (is.list(files)) {
-      files = if (all && is.null(format)) unlist(files) else files[[format]]
+  subdir = config[['rmd_subdir']]; subdir_yes = isTRUE(subdir) || is.character(subdir)
+  files = list.files('.', '[.]Rmd$', ignore.case = TRUE)
+  files = c(files, list.files(
+    if (is.character(subdir)) subdir else '.', '[.]Rmd$', ignore.case = TRUE,
+    recursive = subdir_yes, full.names = subdir_yes
+  ))
+  if (length(files2 <- config[['rmd_files']]) > 0) {
+    if (is.list(files2)) {
+      files2 = if (all && is.null(format)) unlist(files2) else files2[[format]]
     }
+    files = if (subdir_yes) c(files2, files) else files2
   } else {
     files = files[grep('^[^_]', basename(files))]  # exclude those start with _
-    index = match('index', with_ext(files, ''))
-    # if there is a index.Rmd, put it in the beginning
-    if (!is.na(index)) files = c(files[index], files[-index])
   }
+  files = unique(gsub('^[.]/', '', files))
+  index = 'index' == with_ext(files, '')
+  # if there is a index.Rmd, put it in the beginning
+  if (any(index)) files = c(files[index], files[!index])
   check_special_chars(files)
 }
 
@@ -126,20 +130,19 @@ merge_chapters = function(files, to, before = NULL, after = NULL, orig = files) 
 match_dashes = function(x) grep('^---\\s*$', x)
 
 create_placeholder = function(x) {
+  # filter out fenced code blocks (which may contain #'s that are comments)
+  x = x[xfun::prose_index(x)]
   h = grep('^# ', x, value = TRUE)  # chapter title
   h1 = grep(reg_part, h, value = TRUE)  # part title
   h2 = grep(reg_app, h, value = TRUE)   # appendix title
   h3 = setdiff(h, c(h1, h2))
   h4 = grep('^#{2,} ', x, value = TRUE)  # section/subsection/... titles
-  c(
-    '', placeholder(head(h1, 1)), placeholder(head(h2, 1)),
-    placeholder(h3[1]), '', h4
-  )
+  c('', head(h1, 1), head(h2, 1), placeholder(h3), '', h4)
 }
 
-# x1: the title; x2: placeholder if title is empty
-placeholder = function(x1, x2 = NULL) {
-  if (length(x1) && !is.na(x1)) c(x1, '\nPlaceholder\n') else x2
+# add a placeholder paragraph
+placeholder = function(x) {
+  if (length(x)) c(x[1], '\nPlaceholder\n')
 }
 
 fetch_yaml = function(x) {
@@ -176,10 +179,7 @@ check_special_chars = function(filename) {
   filename
 }
 
-# TODO: use xfun::Rscript
-Rscript = function(args, ...) {
-  system2(file.path(R.home('bin'), 'Rscript'), args, ...)
-}
+Rscript = function(...) xfun::Rscript(...)
 
 Rscript_render = function(file, ...) {
   args = shQuote(c(bookdown_file('scripts', 'render_one.R'), file, ...))
@@ -260,15 +260,18 @@ local_resources = function(x) {
 #' @param in_session Whether to compile the book using the current R session, or
 #'   always open a new R session to compile the book whenever changes occur in
 #'   the book directory.
+#' @param quiet Whether to suppress output (e.g., the knitting progress) in the
+#'   console.
 #' @param ... Other arguments passed to \code{servr::\link[servr]{httw}()} (not
 #'   including the \code{handler} argument, which has been set internally).
 #' @export
 serve_book = function(
-  dir = '.', output_dir = '_book', preview = TRUE, in_session = TRUE, ...
+  dir = '.', output_dir = '_book', preview = TRUE, in_session = TRUE, quiet = FALSE, ...
 ) {
   # when this function is called via the RStudio addin, use the dir of the
   # current active document
-  if (missing(dir) && requireNamespace('rstudioapi', quietly = TRUE)) {
+  if (missing(dir) && requireNamespace('rstudioapi', quietly = TRUE) &&
+      rstudioapi::isAvailable()) {
     path = rstudioapi::getSourceEditorContext()[['path']]
     if (!(is.null(path) || path == '')) dir = dirname(path)
   }
@@ -291,10 +294,11 @@ serve_book = function(
     if (!dir_exists(output_dir)) preview_ = FALSE
     if (in_session) render_book(
       files, output_format, output_dir = output_dir, preview = preview_,
-      envir = globalenv()
+      envir = globalenv(), quiet = quiet
     ) else {
       args = shQuote(c(
-        bookdown_file('scripts', 'servr.R'), output_format, output_dir, preview_, files
+        bookdown_file('scripts', 'servr.R'), output_format, output_dir, preview_,
+        quiet, files
       ))
       if (Rscript(args) != 0) stop('Failed to compile ', paste(files, collapse = ' '))
     }
@@ -453,3 +457,27 @@ register_eng_math = function(envs, engine) {
 }
 
 pandoc2.0 = function() rmarkdown::pandoc_available('2.0')
+
+# remove the body of the LaTeX document; only keep section headers and
+# figure/table captions
+strip_latex_body = function(x, alt = '\nThe content was intentionally removed.\n') {
+  i = which(x == '\\mainmatter')
+  if (length(i) == 0) i = which(x == '\\begin{document}')
+  x1 = head(x, i[1])  # preamble (or frontmatter)
+  x2 = tail(x, -i[1]) # body
+  i = grep('^\\\\(part|chapter|(sub)*section)\\*?\\{', x2)  # headers
+  x2[i] = sub('}}$', '}\n', x2[i])  # get rid of the closing } from \hypertarget{
+  x2[i] = paste0(x2[i], alt)
+  i = c(i, grep('^\\\\bibliography', x2))
+  # extract figure/table environments
+  envs = list(
+    fig = c('figure', '.*(\\\\caption\\{.+})\\\\label\\{fig:.+}.*'),
+    tab = c('table', '^(\\\\caption\\{\\\\label\\{tab:.+}).*')
+  )
+  for (j in names(envs)) {
+    r = envs[[j]][2]; i2 = grep(r, x2); env = envs[[j]][1]
+    x2[i2] = sprintf('\\begin{%s}%s\\end{%s}\n', env, gsub(r, '\\1', x2[i2]), env)
+    i = c(i, i2)
+  }
+  c(x1, x2[sort(i)], '\\end{document}')
+}
