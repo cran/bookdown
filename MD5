@@ -1,10 +1,10 @@
-215cd4af303355cbe1ac9850f2ea897e *DESCRIPTION
+0e0c655629a7b0fc4dc9941808d6f9aa *DESCRIPTION
 e65075b906bd6c599b72df243e558ace *NAMESPACE
-550f14f089174e122d6ac4185fdc5399 *NEWS.md
+ebdddbbf5114eace390eebc451e5c3e0 *NEWS.md
 f10cdee70251c8a6a6f0b0c24a6c2ea6 *R/addins.R
 3e0f2c55bbea27a858ce2e266dad2c01 *R/ebook.R
 9c8d523e75d895e95b2da196703bc3e2 *R/gitbook.R
-98ccea022cde64d515791b3327096324 *R/html.R
+fbd7c939f97ac3d24766b059cc1acd35 *R/html.R
 1ae5e8cf5197adcaf70e8714cfcdfb74 *R/latex.R
 34ae1eb3b743664700dcfdbce2661f2d *R/publish.R
 73c9f1154bc7df1c5fbd9e9bcd6b0862 *R/render.R
@@ -13,7 +13,7 @@ d63901bf56bed4d8ad0f1e08d3a12e27 *R/site.R
 c4eab705157b873109b5324993bfad5f *R/utils.R
 a1c9944a46ba48a4a36a2961ffaf8550 *R/word.R
 67414c9981fcec47ecf49949e917935b *R/zzz.R
-0f910619457af3a6d873a38bfa111964 *README.md
+e117fa43d026bb752a489a840edfe676 *README.md
 97ad17e01c6c7eb965f46ee314b42870 *inst/CITATION
 02fa67292908dfa05f1ff5e3df10b389 *inst/resources/AUTHORS
 b06871f281fee6b241d60582ae9369b9 *inst/resources/gitbook/css/fontawesome/fontawesome-webfont.ttf
@@ -75,4 +75,4 @@ b992bc54ed9368498acc1d36fe759915 *tests/rmd/parse-footnotes.Rmd
 ac08d04a93b2601cc4c1164cc2fd9c51 *tests/rmd/split-section.Rmd
 c8397003a4d29c56c1fb311d2155f843 *tests/test-all.R
 303529a8a916545c6ef804604834b030 *tests/test-rmd.R
-7be456bd8feb16d7e7e0e1fee503fcf4 *tests/testit/test-utils.R
+2ba5b0eeb03a17a2b7b3c258e530d619 *tests/testit/test-utils.R
