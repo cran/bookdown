@@ -110,6 +110,8 @@ tufte_html_book = function(...) {
 #'   (the i-th figure/table); if \code{FALSE}, figures/tables will be numbered
 #'   sequentially in the document from 1, 2, ..., and you cannot cross-reference
 #'   section headers in this case.
+#' @param clean_highlight_tags Whether to remove the \verb{<div>} tags around
+#'   \verb{<pre>}, and clean up \verb{<a>} on all lines in code blocks.
 #' @inheritParams pdf_book
 #' @return An R Markdown output format object to be passed to
 #'   \code{rmarkdown::\link{render}()}.
@@ -121,7 +123,8 @@ tufte_html_book = function(...) {
 #' @references \url{https://bookdown.org/yihui/bookdown/}
 #' @export
 html_document2 = function(
-  ..., number_sections = TRUE, pandoc_args = NULL, base_format = rmarkdown::html_document
+  ..., number_sections = TRUE, pandoc_args = NULL, base_format = rmarkdown::html_document,
+  clean_highlight_tags = TRUE
 ) {
   base_format = get_base_format(base_format)
   config = base_format(
@@ -134,7 +137,7 @@ html_document2 = function(
     x = restore_appendix_html(x, remove = FALSE)
     x = restore_part_html(x, remove = FALSE)
     x = resolve_refs_html(x, global = !number_sections)
-    x = clean_pandoc2_highlight_tags(x)
+    if (clean_highlight_tags) x = clean_pandoc2_highlight_tags(x)
     write_utf8(x, output)
     output
   }
@@ -547,7 +550,12 @@ reg_label_types = paste(reg_label_types, 'ex', sep = '|')
 parse_fig_labels = function(content, global = FALSE) {
   lines = grep(reg_chap, content)
   chaps = gsub(reg_chap, '\\2', content[lines])  # chapter numbers
-  if (length(chaps) == 0) global = TRUE  # no chapter titles or no numbered chapters
+  if (length(chaps) == 0) {
+    global = TRUE  # no chapter titles or no numbered chapters
+  } else {
+    chaps = c('0', chaps)  # use Chapter 0 in case of any figure before Chapter 1
+    lines = c(0, lines)
+  }
   arry = character()  # an array of the form c(label = number, ...)
   if (global) chaps = '0'  # Chapter 0 (could be an arbitrary number)
 
@@ -561,18 +569,22 @@ parse_fig_labels = function(content, global = FALSE) {
   eqns = grep('<span class="math display">', content)
 
   for (i in seq_along(labs)) {
-    lab = labs[[i]]
-    if (length(lab) == 0) next
-    if (length(lab) > 1)
-      stop('There are multiple labels on one line: ', paste(lab, collapse = ', '))
+    if (length(lab <- labs[[i]]) == 0) next
 
     j = if (global) chaps else tail(chaps[lines <= i], 1)
+    if (length(j) == 0) j = chaps[1]  # use Chapter 0
     lab = gsub('^\\(#|\\)$', '', lab)
     type = gsub('^([^:]+):.*', '\\1', lab)
+    # there could be multiple labels on the same line, but their types must be
+    # the same (https://github.com/rstudio/bookdown/issues/538)
+    if (length(unique(type)) != 1) stop(
+      'There are mutiple types of labels on one line: ', paste(labs, collapse = ', ')
+    )
+    type = type[1]
     num = arry[lab]
-    if (is.na(num)) {
-      num = cntr$inc(type, j)  # increment number only if the label has not been used
-      if (!global) num = paste0(j, '.', num)  # Figure X.x
+    for (k in which(is.na(num))) {
+      num[k] = cntr$inc(type, j)  # increment number only if the label has not been used
+      if (!global) num[k] = paste0(j, '.', num[k])  # Figure X.x
     }
     arry = c(arry, setNames(num, lab))
 
@@ -586,7 +598,7 @@ parse_fig_labels = function(content, global = FALSE) {
       }
       labs[[i]] = paste0(label_prefix(type), num, ': ')
       k = max(figs[figs <= i])
-      content[k] = paste0(content[k], sprintf('<span id="%s"></span>', lab))
+      content[k] = paste(c(content[k], sprintf('<span id="%s"></span>', lab)), collapse = '')
     }, tab = {
       if (length(grep('^<caption', content[i - 0:1])) == 0) next
       labs[[i]] = sprintf(
@@ -843,7 +855,7 @@ parse_references = function(x) {
 # move references back to the relevant chapter
 relocate_references = function(x, refs, title, ids) {
   if (length(refs) == 0) return(x)
-  ids = intersect(ids, names(refs))
+  ids = intersect(names(refs), ids)
   if (length(ids) == 0) return(x)
   title = if (is.null(title)) '<h3>References</h3>' else gsub('h1>', 'h3>', title)
   c(x, title, '<div id="refs" class="references">', refs[ids], '</div>')
@@ -1013,6 +1025,7 @@ prepend_chapter_title = function(head, body) {
   r2 = '.*?<h[0-6][^>]*>(.+?)</h[0-6]>.*'
   if (!grepl(r2, body)) return(head)
   title = strip_html(gsub(r2, '\\1', body))
+  if (knitr:::is_blank(title)) return(head)
   x1 = gsub(r1, '\\1', head[i])
   x2 = gsub(r1, '\\2', head[i])
   x3 = gsub(r1, '\\3', head[i])

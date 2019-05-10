@@ -45,7 +45,7 @@ get_base_format = function(format) {
 load_config = function() {
   if (length(opts$get('config')) == 0 && file.exists('_bookdown.yml')) {
     # store the book config
-    opts$set(config = yaml::yaml.load_file('_bookdown.yml'))
+    opts$set(config = rmarkdown:::yaml_load_file('_bookdown.yml'))
   }
   opts$get('config')
 }
@@ -64,10 +64,8 @@ source_files = function(format = NULL, config = load_config(), all = FALSE) {
     if (is.character(subdir)) subdir else '.', '[.]Rmd$', ignore.case = TRUE,
     recursive = subdir_yes, full.names = subdir_yes
   ))
-  if (length(files2 <- config[['rmd_files']]) > 0) {
-    if (is.list(files2)) {
-      files2 = if (all && is.null(format)) unlist(files2) else files2[[format]]
-    }
+  if (length(files2 <- config[['rmd_files']]) > 0 && !is.null(format)) {
+    if (is.list(files2)) files2 = if (all) unlist(files2) else files2[[format]]
     files = if (subdir_yes) c(files2, files) else files2
   } else {
     files = files[grep('^[^_]', basename(files))]  # exclude those start with _
