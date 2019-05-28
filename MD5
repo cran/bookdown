@@ -1,4 +1,4 @@
-5c41cd143018f2308544cbb831d3c92e *DESCRIPTION
+db5a9749cbe20dfc77b68d075ad75794 *DESCRIPTION
 e65075b906bd6c599b72df243e558ace *NAMESPACE
 f10cdee70251c8a6a6f0b0c24a6c2ea6 *R/addins.R
 19d0cd2be5b3552be75e901e95fca6bd *R/bookdown-package.R
@@ -7,10 +7,10 @@ f10cdee70251c8a6a6f0b0c24a6c2ea6 *R/addins.R
 fb9817c069f431e6cc0668d02037ab96 *R/html.R
 1ae5e8cf5197adcaf70e8714cfcdfb74 *R/latex.R
 34ae1eb3b743664700dcfdbce2661f2d *R/publish.R
-73c9f1154bc7df1c5fbd9e9bcd6b0862 *R/render.R
+579b2796bbadcec0b63221ac2711232f *R/render.R
 d63901bf56bed4d8ad0f1e08d3a12e27 *R/site.R
 8766eef0de042d0302d7b42efdbd625e *R/skeleton.R
-b174d5e8190e86181566e9810a5b744e *R/utils.R
+62819e38602f7ae895f0944cb6712655 *R/utils.R
 a1c9944a46ba48a4a36a2961ffaf8550 *R/word.R
 67414c9981fcec47ecf49949e917935b *R/zzz.R
 2dfceba05de80fc8acf2dfdda9c68d1c *README.md
@@ -24,7 +24,7 @@ b06871f281fee6b241d60582ae9369b9 *inst/resources/gitbook/css/fontawesome/fontawe
 0d7a6bb6a50e00c7358cf61027f099f0 *inst/resources/gitbook/css/plugin-search.css
 8cb82f94ce1446fa4bafe7a3933e6c65 *inst/resources/gitbook/css/plugin-table.css
 11f13a161c95d0e8257d673dc27f9251 *inst/resources/gitbook/css/style.css
-5790cbede424306d095e5c41c701fc44 *inst/resources/gitbook/js/app.min.js
+7fa8a214bc682ff4aaf434bc342c0a8f *inst/resources/gitbook/js/app.min.js
 999424d32e03b9857098d2c7f53928c2 *inst/resources/gitbook/js/jquery.highlight.js
 fbc747c6143aabb39b0ea7c0524b7057 *inst/resources/gitbook/js/lunr.js
 fbd43df757f068e8b6ed75d972772c17 *inst/resources/gitbook/js/plugin-bookdown.js
