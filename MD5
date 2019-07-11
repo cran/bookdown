@@ -1,10 +1,10 @@
-db5a9749cbe20dfc77b68d075ad75794 *DESCRIPTION
+9ece5524a7631b64efa19dbfe2e0fe48 *DESCRIPTION
 e65075b906bd6c599b72df243e558ace *NAMESPACE
 f10cdee70251c8a6a6f0b0c24a6c2ea6 *R/addins.R
 19d0cd2be5b3552be75e901e95fca6bd *R/bookdown-package.R
 435599d6accb807c01bc35cd56671744 *R/ebook.R
-50d4693851e82665c1677cc0a0f9804f *R/gitbook.R
-fb9817c069f431e6cc0668d02037ab96 *R/html.R
+dc95610ed78e77aa6d3e217ca059c661 *R/gitbook.R
+e30b6e73efd3606db5ffdca01510ee1b *R/html.R
 1ae5e8cf5197adcaf70e8714cfcdfb74 *R/latex.R
 34ae1eb3b743664700dcfdbce2661f2d *R/publish.R
 579b2796bbadcec0b63221ac2711232f *R/render.R
@@ -65,7 +65,7 @@ eca1f3237be072a5d0179b362864ab9c *man/build_chapter.Rd
 0d60b91e4f6ac5709bc0864bcfd09e34 *man/epub_book.Rd
 078a7280694424bb9a24bf87b9e32cb9 *man/gitbook.Rd
 a7361da04d9a89340bbd7c05dd74ed7c *man/html_chapters.Rd
-f299027be352a8ff1d3425d91f641183 *man/html_document2.Rd
+69135eee2ed9b5aa6c462cae61ca14c0 *man/html_document2.Rd
 8a97c8a7ea67bee4e51ac363f7bdad54 *man/kindlegen.Rd
 5504c3361f19d75a4f5603c851dca175 *man/pdf_book.Rd
 eede8851dd23ccdd64cde823e7ab6a69 *man/publish_book.Rd
