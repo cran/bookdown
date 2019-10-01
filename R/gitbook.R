@@ -56,6 +56,7 @@ gitbook = function(
       output, gitbook_page, number_sections, split_by, split_bib, gb_config, split_by
     )
     if (file.exists(output) && !same_path(output, output2)) file.remove(output)
+    move_files_html(output2, lib_dir)
     output2
   }
   config$bookdown_output_format = 'html'
@@ -90,11 +91,13 @@ gitbook_dependency = function(table_css) {
     'gitbook', '2.6.7', src = assets,
     stylesheet = file.path('css', c(
       'style.css', if (table_css) 'plugin-table.css', 'plugin-bookdown.css',
-      'plugin-highlight.css', 'plugin-search.css', 'plugin-fontsettings.css'
+      'plugin-highlight.css', 'plugin-search.css', 'plugin-fontsettings.css',
+      'plugin-clipboard.css'
     )),
     script = file.path('js', c(
-      app, 'lunr.js', 'plugin-search.js', 'plugin-sharing.js',
-      'plugin-fontsettings.js', 'plugin-bookdown.js', 'jquery.highlight.js'
+      app, 'lunr.js', 'clipboard.min.js', 'plugin-search.js', 'plugin-sharing.js',
+      'plugin-fontsettings.js', 'plugin-bookdown.js', 'jquery.highlight.js',
+      'plugin-clipboard.js'
     ))
   ))
 }
