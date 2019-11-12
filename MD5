@@ -1,10 +1,10 @@
-29818966365fc02d4b50965383bd7213 *DESCRIPTION
+ef33ac6c59b390bed399ae68aa6036a3 *DESCRIPTION
 02df69b144666d695148de4becf3f831 *NAMESPACE
 f10cdee70251c8a6a6f0b0c24a6c2ea6 *R/addins.R
 19d0cd2be5b3552be75e901e95fca6bd *R/bookdown-package.R
 435599d6accb807c01bc35cd56671744 *R/ebook.R
-a2c4cb0f3c799dbcc4ef18657a8ff9e1 *R/gitbook.R
-22e056e1a005383330ab197ff205fa37 *R/html.R
+803d3ce7e025150f7cb06df5273bdf08 *R/gitbook.R
+abc0f5dfd55f27cf92dcb0fc62a9dbfd *R/html.R
 1ae5e8cf5197adcaf70e8714cfcdfb74 *R/latex.R
 34ae1eb3b743664700dcfdbce2661f2d *R/publish.R
 579b2796bbadcec0b63221ac2711232f *R/render.R
@@ -33,7 +33,7 @@ fbd43df757f068e8b6ed75d972772c17 *inst/resources/gitbook/js/plugin-bookdown.js
 a30f95fcd3fde10637ace1fb691b7475 *inst/resources/gitbook/js/plugin-clipboard.js
 c69e5565f16ccb8560ee353e6ba4b927 *inst/resources/gitbook/js/plugin-fontsettings.js
 2d4c4d47ba34946b8ebcbe41aa522756 *inst/resources/gitbook/js/plugin-search.js
-723416fb0154ce96e35ce1ec56992afa *inst/resources/gitbook/js/plugin-sharing.js
+4688a13c146a3560ec9576582e037ecb *inst/resources/gitbook/js/plugin-sharing.js
 33cabfa15c1060aaa3d207c653afb1ee *inst/resources/jquery/jquery.min.js
 52a6aac18ae26b6ecbd4f3a0d9579c9f *inst/resources/mathquill/font/Symbola.ttf
 d7c2f5c109458df01f00898152ac3206 *inst/resources/mathquill/init.js
@@ -76,8 +76,8 @@ eede8851dd23ccdd64cde823e7ab6a69 *man/publish_book.Rd
 9109f4c6c662066095ef58feea19979c *man/resolve_refs_html.Rd
 7f1f4135d56bc677f346f8f802db02d6 *man/serve_book.Rd
 09c9368b992c67437fe7d847a5622a84 *tests/rmd/equation-label.Rmd
-b992bc54ed9368498acc1d36fe759915 *tests/rmd/parse-footnotes.Rmd
+3ed6997753d45a63409f0f4377f2aa29 *tests/rmd/parse-footnotes.Rmd
 ac08d04a93b2601cc4c1164cc2fd9c51 *tests/rmd/split-section.Rmd
 c8397003a4d29c56c1fb311d2155f843 *tests/test-all.R
-303529a8a916545c6ef804604834b030 *tests/test-rmd.R
+e78be4bb9bf88eaf87f8ea474de89f0d *tests/test-rmd.R
 2ba5b0eeb03a17a2b7b3c258e530d619 *tests/testit/test-utils.R

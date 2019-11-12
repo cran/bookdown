@@ -30,7 +30,7 @@ gitbook = function(
       ..., extra_dependencies = c(extra_dependencies, gitbook_dependency(table_css))
     )
   }
-  gb_config = config
+  gb_config = check_gb_config(config)
   if (identical(template, 'default')) {
     template = bookdown_file('templates', 'gitbook.html')
   }
@@ -130,10 +130,17 @@ gitbook_page = function(
   # gitbook JS scripts only work after the DOM has been loaded, so move them
   # from head to foot
   i = grep('^\\s*<script src=".+/gitbook([^/]+)?/js/[.a-z-]+[.]js"></script>\\s*$', head)
-  # it is probably a self-contained page, so look for base64 encoded scripts
-  if (length(i) == 0) i = grep(
-    '^\\s*<script src="data:application/x-javascript;base64,[^"]+"></script>\\s*$', head
-  )
+  # it is probably a self-contained page, so look for script node.
+  # from pandoc2, they are not always base64 encoded scripts, so start and end of scripts
+  # node must be found and moved.
+  if (length(i) == 0) {
+    s_start = grep(
+      '^\\s*<script( src="data:application/(x-)?javascript;base64,[^"]+")?>', head
+    )
+    s_end = grep("</script>\\s*$", head)
+    # find all lines to move
+    i = unlist(mapply(seq.int, s_start, s_end, SIMPLIFY = FALSE))
+  }
   s = head[i]; head[i] = ''
   j = grep('<!--bookdown:config-->', foot)[1]
   foot[j] = paste(c(s, foot[j]), collapse = '\n')
@@ -222,9 +229,9 @@ gitbook_toc = function(x, cur, config) {
 gitbook_config = function(config = list()) {
   default = list(
     sharing = list(
-      github = FALSE, facebook = TRUE, twitter = TRUE, google = FALSE,
+      facebook = TRUE, twitter = TRUE,
       linkedin = FALSE, weibo = FALSE, instapaper = FALSE, vk = FALSE,
-      all = c('facebook', 'google', 'twitter', 'linkedin', 'weibo', 'instapaper')
+      all = c('facebook', 'twitter', 'linkedin', 'weibo', 'instapaper')
     ),
     fontsettings = list(theme = 'white', family = 'sans', size = 2),
     edit = list(link = NULL, text = NULL),
@@ -276,4 +283,17 @@ download_filenames = function(config) {
     }
   }
   if (length(downloads)) I(downloads)
+}
+
+check_gb_config = function(config) {
+  # to ensure backward compatibility with 0.14 and earlier
+  if (isTRUE(config[["sharing"]][["google"]]) ||
+      'google' %in% config[["sharing"]][["all"]]) {
+    warning("Sharing to Google+ is no longer supported because Google has shut down Google+.\n",
+            "Please update your configuration in `_output.yml`.",
+            call. = FALSE)
+    config[["sharing"]][["google"]] = NULL
+    config[["sharing"]][["all"]] = setdiff(config[["sharing"]][["all"]], "google")
+  }
+  config
 }
