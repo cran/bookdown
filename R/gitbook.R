@@ -30,7 +30,7 @@ gitbook = function(
       ..., extra_dependencies = c(extra_dependencies, gitbook_dependency(table_css))
     )
   }
-  gb_config = check_gb_config(config)
+  gb_config = config
   if (identical(template, 'default')) {
     template = bookdown_file('templates', 'gitbook.html')
   }
@@ -155,7 +155,7 @@ gitbook_page = function(
   }
 
   # you can set the edit setting in either _bookdown.yml or _output.yml
-  for (type in c('edit', 'history')) {
+  for (type in c('edit', 'history', 'view')) {
     if (is.list(setting <- source_link_setting(config[[type]], type = type)))
       config[[type]] = setting
     if (length(rmd_cur) && is.list(config[[type]]))
@@ -229,13 +229,14 @@ gitbook_toc = function(x, cur, config) {
 gitbook_config = function(config = list()) {
   default = list(
     sharing = list(
-      facebook = TRUE, twitter = TRUE,
+      github = FALSE, facebook = TRUE, twitter = TRUE,
       linkedin = FALSE, weibo = FALSE, instapaper = FALSE, vk = FALSE,
       all = c('facebook', 'twitter', 'linkedin', 'weibo', 'instapaper')
     ),
     fontsettings = list(theme = 'white', family = 'sans', size = 2),
     edit = list(link = NULL, text = NULL),
     history = list(link = NULL, text = NULL),
+    view = list(link = NULL, text = NULL),
     download = NULL,
     # toolbar = list(position = 'static'),
     toc = list(collapse = 'subsection')
@@ -283,17 +284,4 @@ download_filenames = function(config) {
     }
   }
   if (length(downloads)) I(downloads)
-}
-
-check_gb_config = function(config) {
-  # to ensure backward compatibility with 0.14 and earlier
-  if (isTRUE(config[["sharing"]][["google"]]) ||
-      'google' %in% config[["sharing"]][["all"]]) {
-    warning("Sharing to Google+ is no longer supported because Google has shut down Google+.\n",
-            "Please update your configuration in `_output.yml`.",
-            call. = FALSE)
-    config[["sharing"]][["google"]] = NULL
-    config[["sharing"]][["all"]] = setdiff(config[["sharing"]][["all"]], "google")
-  }
-  config
 }

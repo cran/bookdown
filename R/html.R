@@ -147,6 +147,46 @@ html_document2 = function(
 
 #' @rdname html_document2
 #' @export
+html_fragment2 = function(..., number_sections = FALSE) {
+  html_document2(
+    ..., number_sections = number_sections, base_format = rmarkdown::html_fragment
+  )
+}
+
+#' @rdname html_document2
+#' @export
+html_notebook2 = function(..., number_sections = FALSE) {
+  html_document2(
+    ..., number_sections = number_sections, base_format = rmarkdown::html_notebook
+  )
+}
+
+#' @rdname html_document2
+#' @export
+html_vignette2 = function(..., number_sections = FALSE) {
+  html_document2(
+    ..., number_sections = number_sections, base_format = rmarkdown::html_vignette
+  )
+}
+
+#' @rdname html_document2
+#' @export
+ioslides_presentation2 = function(..., number_sections = FALSE) {
+  html_document2(
+    ..., number_sections = number_sections, base_format = rmarkdown::ioslides_presentation
+  )
+}
+
+#' @rdname html_document2
+#' @export
+slidy_presentation2 = function(..., number_sections = FALSE) {
+  html_document2(
+    ..., number_sections = number_sections, base_format = rmarkdown::slidy_presentation
+  )
+}
+
+#' @rdname html_document2
+#' @export
 tufte_html2 = function(..., number_sections = FALSE) {
   html_document2(
     ..., number_sections = number_sections, base_format = tufte::tufte_html
@@ -191,6 +231,7 @@ build_chapter = function(
     button_link(link_prev, 'Previous'),
     source_link(rmd_cur, type = 'edit'),
     source_link(rmd_cur, type = 'history'),
+    source_link(rmd_cur, type = 'view'),
     button_link(link_next, 'Next'),
     '</p>',
     '</div>',
@@ -625,7 +666,7 @@ parse_fig_labels = function(content, global = FALSE) {
 # given a label, e.g. fig:foo, figure out the appropriate prefix
 label_prefix = function(type, dict = label_names) i18n('label', type, dict)
 
-ui_names = list(edit = 'Edit', chapter_name = '')
+ui_names = list(edit = 'Edit', chapter_name = '', appendix_name = '')
 ui_language = function(key, dict = ui_names) i18n('ui', key, ui_names)
 
 i18n = function(group, key, dict = list()) {
@@ -731,19 +772,30 @@ add_toc_ids = function(toc) {
 }
 
 add_chapter_prefix = function(content) {
+  for (type in c('chapter', 'appendix'))
+    content = add_chapter_prefix_one(content, type)
+  content
+}
+
+add_chapter_prefix_one = function(content, type = c('chapter', 'appendix')) {
   config = load_config()
-  chapter_name = config[['chapter_name']] %n% ui_language('chapter_name')
+  field = paste0(type, '_name')
+  chapter_name = config[[field]] %n% ui_language(field)
   if (is.null(chapter_name) || identical(chapter_name, '')) return(content)
   chapter_fun = if (is.character(chapter_name)) {
     function(i) switch(
       length(chapter_name), paste0(chapter_name, i),
       paste0(chapter_name[1], i, chapter_name[2]),
-      stop('chapter_name must be of length 1 or 2')
+      stop(field, ' must be of length 1 or 2')
     )
   } else if (is.function(chapter_name)) chapter_name else {
-    stop('chapter_name in _bookdown.yml must be a character string or function')
+    stop(field, ' in _bookdown.yml must be a character string or function')
   }
-  r_chap = '^(<h1><span class="header-section-number">)([0-9]+)(</span>.+</h1>.*)$'
+  # chapters use Arabic numerals; appendices use A-Z
+  r_chap = sprintf(
+    '^(<h1><span class="header-section-number">)([%s]+)(</span>.+</h1>.*)$',
+    switch(type, chapter = '0-9', appendix = 'A-Z')
+  )
   for (i in grep(r_chap, content)) {
     h = content[i]
     x1 = gsub(r_chap, '\\1', h)
@@ -899,18 +951,28 @@ number_appendix = function(x, i1, i2, type = c('toc', 'header')) {
     '^(<%s>.*<span class="%s-section-number">)([.0-9]+)(</span>.+)',
     if (type == 'toc') 'li' else 'h[1-6]', type
   )
-  d = list()  # a dictionary e.g. list(12 = 'A', 13 = 'B', ...)
-  i = i1:i2
-  for (j in i[grep(r, x[i])]) {
-    s1 = gsub(r, '\\1', x[j])
-    s2 = gsub(r, '\\2', x[j])
-    s3 = gsub(r, '\\3', x[j])
-    s = strsplit(s2, '[.]')[[1]]  # section numbers
-    if (is.null(d[[s[1]]])) d[[s[1]]] = LETTERS[length(d) + 1]
-    s[1] = d[[s[1]]]
-    if (is.na(s[1])) stop('Too many chapters in the appendix (more than 26)')
-    x[j] = paste0(s1, paste(s, collapse = '.'), s3)
+  i = grep(r, x)
+  i = i[i >= i1 & i <= i2]
+  if (length(i) == 0) return(x)
+
+  s1 = gsub(r, '\\1', x[i])
+  s2 = gsub(r, '\\2', x[i]) # section numbers
+  s3 = gsub(r, '\\3', x[i])
+  s = strsplit(s2, ".", fixed = TRUE)
+  s = lapply(s, as.integer)
+
+  top = vapply(s, length, integer(1)) == 1
+  app_num = findInterval(seq_along(s), which(top))
+  # normalize chapter numbers to appendix numbers
+  for (j in seq_along(s)) s[[j]][1] = app_num[j]
+
+  counter_fun = function(nums) {
+    if (nums[1] > length(LETTERS))
+      stop('Too many chapters in the appendix (more than 26)')
+    paste0(c(LETTERS[nums[1]], nums[-1]), collapse = ".")
   }
+  counters = vapply(s, counter_fun, character(1))
+  x[i] = paste0(s1, counters, s3)
   x
 }
 
