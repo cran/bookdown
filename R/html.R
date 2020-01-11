@@ -54,12 +54,11 @@ html_chapters = function(
   base_format = rmarkdown::html_document, split_bib = TRUE, page_builder = build_chapter,
   split_by = c('section+number', 'section', 'chapter+number', 'chapter', 'rmd', 'none')
 ) {
-  base_format = get_base_format(base_format)
-  config = base_format(
+  config = get_base_format(base_format, list(
     toc = toc, number_sections = number_sections, fig_caption = fig_caption,
     self_contained = FALSE, lib_dir = lib_dir,
     template = template, pandoc_args = pandoc_args2(pandoc_args), ...
-  )
+  ))
   split_by = match.arg(split_by)
   post = config$post_processor  # in case a post processor have been defined
   config$post_processor = function(metadata, input, output, clean, verbose) {
@@ -126,14 +125,14 @@ tufte_html_book = function(...) {
 html_document2 = function(
   ..., number_sections = TRUE, pandoc_args = NULL, base_format = rmarkdown::html_document
 ) {
-  base_format = get_base_format(base_format)
-  config = base_format(
+  config = get_base_format(base_format, list(
     ..., number_sections = number_sections, pandoc_args = pandoc_args2(pandoc_args)
-  )
+  ))
   post = config$post_processor  # in case a post processor have been defined
   config$post_processor = function(metadata, input, output, clean, verbose) {
     if (is.function(post)) output = post(metadata, input, output, clean, verbose)
     x = read_utf8(output)
+    x = clean_html_tags(x)
     x = restore_appendix_html(x, remove = FALSE)
     x = restore_part_html(x, remove = FALSE)
     x = resolve_refs_html(x, global = !number_sections)
@@ -251,7 +250,7 @@ split_chapters = function(output, build = build_chapter, number_sections, split_
   if (!(split_level %in% 0:2)) stop('split_level must be 0, 1, or 2')
 
   x = read_utf8(output)
-  x = clean_meta_tags(x)
+  x = clean_html_tags(x)
 
   i1 = find_token(x, '<!--bookdown:title:start-->')
   i2 = find_token(x, '<!--bookdown:title:end-->')
@@ -447,6 +446,23 @@ clean_meta_tags = function(x) {
   x3 = sub(r, '\\3', x[i])
   x2 = gsub('<[^>]+>', '', x2)
   x[i] = paste0(x1, x2, x3)
+  x
+}
+
+# remove extra attributes on headers (Pandoc 2.9+):
+# https://github.com/rstudio/bookdown/issues/832
+clean_header_tags = function(x) {
+  r1 = '^<div [^>]*?class="section level[1-6][^"]*"[^>]*>$'
+  r2 = '^(<h[1-6])([^>]+)(>.+</h[1-6]>.*)$'
+  i = grep(r2, x)
+  i = i[grep(r1, x[i - 1])]  # the line above <h1> should be <div>
+  x[i] = gsub(r2, '\\1\\3', x[i])  # remove attributes on <h1>
+  x
+}
+
+clean_html_tags = function(x) {
+  x = clean_meta_tags(x)
+  x = clean_header_tags(x)
   x
 }
 
@@ -879,7 +895,7 @@ restore_appendix_html = function(x, remove = TRUE) {
 
 # parse reference items so we can move them back to the chapter where they were used
 parse_references = function(x) {
-  i = which(x == '<div id="refs" class="references">')
+  i = grep('^<div id="refs" class="references[^"]*">$', x)
   if (length(i) != 1) return(list(refs = character(), html = x))
   r = '^<div id="(ref-[^"]+)">$'
   k = grep(r, x)
@@ -988,6 +1004,7 @@ move_files_html = function(output, lib_dir) {
   }))
   f = c(f, parse_cover_image(x))
   f = vapply(f, utils::URLdecode, FUN.VALUE = character(1))
+  Encoding(f) = 'UTF-8'
   f = local_resources(unique(f[file.exists(f)]))
   # detect resources in CSS
   css = lapply(grep('[.]css$', f, ignore.case = TRUE, value = TRUE), function(z) {
