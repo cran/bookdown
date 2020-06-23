@@ -15,7 +15,6 @@ render_book(
   output_dir = NULL,
   new_session = NA,
   preview = FALSE,
-  encoding = "UTF-8",
   config_file = "_bookdown.yml"
 )
 
@@ -27,8 +26,8 @@ TRUE}, only files specified in this argument are rendered, otherwise all R
 Markdown files specified by the book are rendered.}
 
 \item{output_format, ..., clean, envir}{Arguments to be passed to
-\code{rmarkdown::\link[rmarkdown]{render}()}. For \code{preview_chapter()},
-\code{...} is passed to \code{render_book()}.}
+\code{rmarkdown::\link{render}()}. For \code{preview_chapter()}, \code{...}
+is passed to \code{render_book()}.}
 
 \item{clean_envir}{Whether to clean up the environment \code{envir} before
 rendering the book. By default, the environment is cleaned when rendering
@@ -48,9 +47,6 @@ files (if not provided, the value of the \code{new_session} option in
 \code{input} argument. Previewing a certain chapter may save compilation
 time as you actively work on this chapter, but the output may not be
 accurate (e.g. cross-references to other chapters will not work).}
-
-\item{encoding}{Ignored. The character encoding of all input files is
-supposed to be UTF-8.}
 
 \item{config_file}{The book configuration file.}
 }

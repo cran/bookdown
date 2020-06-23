@@ -13,8 +13,8 @@
 #'   TRUE}, only files specified in this argument are rendered, otherwise all R
 #'   Markdown files specified by the book are rendered.
 #' @param output_format,...,clean,envir Arguments to be passed to
-#'   \code{rmarkdown::\link[rmarkdown]{render}()}. For \code{preview_chapter()},
-#'   \code{...} is passed to \code{render_book()}.
+#'   \code{rmarkdown::\link{render}()}. For \code{preview_chapter()}, \code{...}
+#'   is passed to \code{render_book()}.
 #' @param clean_envir Whether to clean up the environment \code{envir} before
 #'   rendering the book. By default, the environment is cleaned when rendering
 #'   the book in a non-interactive R session.
@@ -30,8 +30,6 @@
 #'   \code{input} argument. Previewing a certain chapter may save compilation
 #'   time as you actively work on this chapter, but the output may not be
 #'   accurate (e.g. cross-references to other chapters will not work).
-#' @param encoding Ignored. The character encoding of all input files is
-#'   supposed to be UTF-8.
 #' @param config_file The book configuration file.
 #' @export
 #' @examples
@@ -40,7 +38,7 @@
 render_book = function(
   input, output_format = NULL, ..., clean = TRUE, envir = parent.frame(),
   clean_envir = !interactive(), output_dir = NULL, new_session = NA,
-  preview = FALSE, encoding = 'UTF-8', config_file = '_bookdown.yml'
+  preview = FALSE, config_file = '_bookdown.yml'
 ) {
 
   verify_rstudio_version()
@@ -50,7 +48,7 @@ render_book = function(
     if (!is.character(format) || !(format %in% c('latex', 'html'))) format = NULL
   } else if (is.character(output_format)) {
     if (identical(output_format, 'all')) {
-      output_format = rmarkdown::all_output_formats(input, 'UTF-8')
+      output_format = rmarkdown::all_output_formats(input)
     }
     if (length(output_format) > 1) {
       return(unlist(lapply(output_format, function(fmt) render_book(
@@ -106,18 +104,19 @@ render_book = function(
 
   main = book_filename()
   if (!grepl('[.][Rr]?md$', main)) main = paste0(main, if (new_session) '.md' else '.Rmd')
-  delete_main = isTRUE(config[['delete_merged_file']])
-  if (file.exists(main) && !delete_main) stop(
-    'The file ', main, ' exists. Please delete it if it was automatically generated, ',
-    'or set a different book_filename option in _bookdown.yml. If you are sure ',
-    "it can be safely deleted, please set the option 'delete_merged_file' to true in _bookdown.yml."
+  delete_main = config[['delete_merged_file']]
+  check_main = function() file.exists(main) && is.null(delete_main)
+  if (check_main()) stop(
+    'The file ', main, ' exists. Please delete it if it was automatically generated. ',
+    'If you are sure it can be safely overwritten or deleted, please set the option ',
+    "'delete_merged_file' to true in _bookdown.yml."
   )
-  on.exit(if (file.exists(main) && !delete_main) {
+  on.exit(if (check_main()) {
     message('Please delete ', main, ' after you finish debugging the error.')
   }, add = TRUE)
   opts$set(book_filename = main)  # store the book filename
 
-  files = setdiff(source_files(format, config), main)
+  files = source_files(format, config)
   if (length(files) == 0) stop(
     'No input R Markdown files found from the current directory ', getwd(),
     ' or in the rmd_files field of _bookdown.yml'
@@ -133,7 +132,7 @@ render_book = function(
   } else {
     render_cur_session(files, main, config, output_format, clean, envir, ...)
   }
-  file.remove(main)
+  if (!xfun::isFALSE(delete_main)) file.remove(main)
   res
 }
 
@@ -149,7 +148,7 @@ render_cur_session = function(files, main, config, output_format, clean, envir, 
     insert_chapter_script(config, 'before'),
     insert_chapter_script(config, 'after')
   )
-  rmarkdown::render(main, output_format, ..., clean = clean, envir = envir, encoding = 'UTF-8')
+  rmarkdown::render(main, output_format, ..., clean = clean, envir = envir)
 }
 
 render_new_session = function(files, main, config, output_format, clean, envir, ...) {
@@ -192,7 +191,7 @@ render_new_session = function(files, main, config, output_format, clean, envir, 
 
   rmarkdown::render(
     main, output_format, ..., clean = clean, envir = envir,
-    run_pandoc = TRUE, knit_meta = knit_meta, encoding = 'UTF-8'
+    run_pandoc = TRUE, knit_meta = knit_meta
   )
 
 }

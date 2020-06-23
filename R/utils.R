@@ -24,8 +24,17 @@ new_counters = function(type, rownames) {
   )
 }
 
-# set some internal knitr options
-set_opts_knit = function(config) {
+# set common format config
+common_format_config = function(
+  config, format, file_scope = getOption('bookdown.render.file_scope', TRUE)
+) {
+
+  # provide file_scope unless disabled via the global option
+  if (file_scope) config$file_scope = md_chapter_splitter
+
+  # set output format
+  config$bookdown_output_format = format
+
   # use labels of the form (\#label) in knitr
   config$knitr$opts_knit$bookdown.internal.label = TRUE
   # when the output is LaTeX, force LaTeX tables instead of default Pandoc tables
@@ -76,7 +85,9 @@ source_files = function(format = NULL, config = load_config(), all = FALSE) {
     # add those files to subdir content if any
     files = if (subdir_yes) c(files2, subdir_files) else files2
   }
-  files = files[grep('^[^_]', basename(files))]  # exclude those start with _
+  # exclude files that start with _, and the merged file
+  files = files[grep('^[^_]', basename(files))]
+  files = setdiff(files, with_ext(book_filename(config), c('.md', '.Rmd')))
   files = unique(gsub('^[.]/', '', files))
   index = 'index' == with_ext(files, '')
   # if there is a index.Rmd, put it in the beginning
@@ -130,6 +141,25 @@ merge_chapters = function(files, to, before = NULL, after = NULL, orig = files) 
   unlink(to)
   write_utf8(content, to)
   Sys.chmod(to, '644')
+}
+
+# split a markdown file into a set of chapters
+md_chapter_splitter = function(file) {
+  x = read_utf8(file)
+
+  # get positions of the chapter delimiters (r_chap_pattern defined in html.R)
+  if (length(pos <- grep(r_chap_pattern, x)) <= 1) return()
+  pos = c(0, pos)
+
+  # get the filenames
+  names = gsub(r_chap_pattern, '\\1', x[pos])
+
+  # extract the chapters and pair them w/ the names
+  lapply(seq_along(names), function(i) {
+    i1 = pos[i] + 1
+    i2 = pos[i + 1]
+    list(name = names[i], content = x[i1:i2])
+  })
 }
 
 match_dashes = function(x) grep('^---\\s*$', x)
@@ -255,8 +285,8 @@ local_resources = function(x) {
 #'
 #' When any files are modified or added to the book directory, the book will be
 #' automatically recompiled, and the current HTML page in the browser will be
-#' refreshed. This function is based on \code{servr::\link[servr]{httw}()} to
-#' continuously watch a directory.
+#' refreshed. This function is based on \code{servr::\link[servr:httd]{httw}()}
+#' to continuously watch a directory.
 #'
 #' For \code{in_session = TRUE}, you will have access to all objects created in
 #' the book in the current R session: if you use a daemonized server (via the
@@ -285,8 +315,8 @@ local_resources = function(x) {
 #'   the book directory.
 #' @param quiet Whether to suppress output (e.g., the knitting progress) in the
 #'   console.
-#' @param ... Other arguments passed to \code{servr::\link[servr]{httw}()} (not
-#'   including the \code{handler} argument, which has been set internally).
+#' @param ... Other arguments passed to \code{servr::\link[servr:httd]{httw}()}
+#'   (not including the \code{handler} argument, which has been set internally).
 #' @export
 serve_book = function(
   dir = '.', output_dir = '_book', preview = TRUE, in_session = TRUE, quiet = FALSE, ...
@@ -334,7 +364,7 @@ serve_book = function(
 first_html_format = function() {
   fallback = 'bookdown::gitbook'
   if (!file.exists('index.Rmd')) return(fallback)
-  formats = rmarkdown::all_output_formats('index.Rmd', 'UTF-8')
+  formats = rmarkdown::all_output_formats('index.Rmd')
   formats = grep('gitbook|html', formats, value = TRUE)
   if (length(formats) == 0) fallback else formats[1]
 }
