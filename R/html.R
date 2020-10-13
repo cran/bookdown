@@ -97,10 +97,10 @@ tufte_html_book = function(...) {
 #' These are simple wrappers of the output format functions like
 #' \code{rmarkdown::\link{html_document}()}, and they added the capability of
 #' numbering figures/tables/equations/theorems and cross-referencing them. See
-#' References for the syntax. Note you can also cross-reference sections by
-#' their ID's using the same syntax when sections are numbered. In case you want
-#' to enable cross reference in other formats, use \code{markdown_document2} with
-#' \code{base_format} argument.
+#' \sQuote{References} for the syntax. Note you can also cross-reference
+#' sections by their ID's using the same syntax when sections are numbered. In
+#' case you want to enable cross reference in other formats, use
+#' \code{markdown_document2} with \code{base_format} argument.
 #' @param ...,fig_caption,md_extensions,pandoc_args Arguments to be passed to a
 #'   specific output format function. For a function \code{foo2()}, its
 #'   arguments are passed to \code{foo()}, e.g. \code{...} of
@@ -114,10 +114,11 @@ tufte_html_book = function(...) {
 #' @inheritParams pdf_book
 #' @return An R Markdown output format object to be passed to
 #'   \code{rmarkdown::\link{render}()}.
-#' @note These function are expected to work with a single R Markdown document
-#'   instead of multiple documents of a book, so they are to be passed to
-#'   \code{rmarkdown::render()} instead of \code{bookdown::render_book()}. The
-#'   functions \samp{tufte_*()} are wrappers of funtions in the \pkg{tufte}
+#' @note These output formats are used to generate single output files, such as
+#'   a single HTML output file (unlike \code{gitbook}, which generates multiple
+#'   HTML output files by default).
+#'
+#'   The functions \samp{tufte_*()} are wrappers of functions in the \pkg{tufte}
 #'   package.
 #' @references \url{https://bookdown.org/yihui/bookdown/}
 #' @export
@@ -138,7 +139,7 @@ html_document2 = function(
     write_utf8(x, output)
     output
   }
-  config = common_format_config(config, 'html', file_scope = FALSE)
+  config = common_format_config(config, 'html')
   config
 }
 
@@ -560,7 +561,7 @@ ref_to_number = function(ref, ref_table, backslash) {
       warning('The label(s) ', paste(lab[i], collapse = ', '), ' not found', call. = FALSE)
     num[i] = '<strong>??</strong>'
   }
-  # equation references should include paratheses
+  # equation references should include parentheses
   i = grepl('^eq:', ref)
   num[i] = paste0('(', num[i], ')')
   res = sprintf('<a href="#%s">%s</a>', ref, num)
@@ -673,6 +674,7 @@ parse_fig_labels = function(content, global = FALSE) {
 
   regmatches(content, m) = labs
 
+  write_ref_keys(names(arry))
   # remove labels in figure alt text (it will contain \ like (\#fig:label))
   content = gsub('"\\(\\\\#(fig:[-/[:alnum:]]+)\\)', '"', content)
 
@@ -705,6 +707,7 @@ parse_section_labels = function(content) {
       sub(sec_ids, '\\1', content[i - 1])
     ))
   }
+  write_ref_keys(names(arry))
   arry
 }
 

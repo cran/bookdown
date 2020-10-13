@@ -26,11 +26,18 @@ new_counters = function(type, rownames) {
 
 # set common format config
 common_format_config = function(
-  config, format, file_scope = getOption('bookdown.render.file_scope', TRUE)
+  config, format, file_scope = getOption('bookdown.render.file_scope', FALSE)
 ) {
 
-  # provide file_scope unless disabled via the global option
+  # provide file_scope if requested
   if (file_scope) config$file_scope = md_chapter_splitter
+
+  # prepend the custom-environment filter
+  config$pandoc$lua_filters = c(
+    lua_filter("custom-environment.lua"), config$pandoc$lua_filters
+  )
+  # and add bookdown metadata file for the filter to work
+  config$pandoc$args = c(bookdown_yml_arg(), config$pandoc$args)
 
   # set output format
   config$bookdown_output_format = format
@@ -81,6 +88,10 @@ source_files = function(format = NULL, config = load_config(), all = FALSE) {
   files = c(files, subdir_files)
   # if rmd_files is provided, use those files in addition to those under rmd_subdir
   if (length(files2 <- config[['rmd_files']]) > 0) {
+    # users should specify 'docx' as the output format name for Word, but let's
+    # make 'word' an alias of 'docx' to avoid further confusion:
+    # https://stackoverflow.com/q/63678601/559676
+    if ('word' %in% names(files2) && identical(format, 'docx')) format = 'word'
     if (is.list(files2)) files2 = if (all) unlist(files2) else files2[[format]]
     # add those files to subdir content if any
     files = if (subdir_yes) c(files2, subdir_files) else files2
@@ -118,6 +129,7 @@ mark_dirs = function(x) {
   x
 }
 
+# TODO: use xfun::del_empty_dir()
 clean_empty_dir = function(dir) {
   if (is.null(dir) || !dir_exists(dir)) return()
   files = list.files(dir, all.files = TRUE, recursive = TRUE)
@@ -261,6 +273,7 @@ strip_search_text = function(x) {
   x = gsub('<script[^>]*>(.*?)</script>', '', x)
   x = gsub('<div id="refs" class="references">.*', '', x)
   x = strip_html(x)
+  x = gsub('[[:space:]]', ' ', x)
   x
 }
 
@@ -281,7 +294,24 @@ local_resources = function(x) {
   grep('^(f|ht)tps?://.+', x, value = TRUE, invert = TRUE)
 }
 
-#' Continously preview the HTML output of a book using the \pkg{servr} package
+# write out reference keys to _book/reference-keys.txt (for the RStudio visual
+# editor to autocomplete \@ref())
+write_ref_keys = function(x) {
+  # this only works for books rendered with bookdown::render_book() (and not for
+  # rmarkdown::render())
+  if (is.null(preview <- opts$get('preview'))) return()
+  # collect reference keys from parse_fig_labels() and parse_section_labels()
+  if (is.null(d <- opts$get('output_dir'))) return()
+  p = ref_keys_path(d)
+  if (file.exists(p)) x = unique(c(xfun::read_utf8(p), x))
+  xfun::write_utf8(x, p)
+}
+
+ref_keys_path = function(d = opts$get('output_dir')) {
+  file.path(d, 'reference-keys.txt')
+}
+
+#' Continuously preview the HTML output of a book using the \pkg{servr} package
 #'
 #' When any files are modified or added to the book directory, the book will be
 #' automatically recompiled, and the current HTML page in the browser will be
@@ -535,4 +565,69 @@ strip_latex_body = function(x, alt = '\nThe content was intentionally removed.\n
     i = c(i, i2)
   }
   c(x1, x2[sort(i)], '\\end{document}')
+}
+
+# bookdown Lua filters paths
+lua_filter = function (filters = NULL) {
+  rmarkdown::pkg_file_lua(filters, package = 'bookdown')
+}
+
+# pass _bookdown.yml to Pandoc's Lua filters
+bookdown_yml_arg = function(config = load_config(), path = tempfile()) {
+  # this is supported for Pandoc >= 2.0 only
+  if (!pandoc2.0() || length(config) == 0) return()
+  yaml::write_yaml(list(bookdown = config), path)
+  c("--metadata-file", rmarkdown::pandoc_path_arg(path))
+}
+
+#' Convert the syntax of theorem and proof environments from code blocks to
+#' fenced Divs
+#'
+#' This function converts the syntax \samp{```{theorem, label, ...}} to
+#' \samp{::: {.theorem #label ...}} (Pandoc's fenced Div) for theorem
+#' environments.
+#' @param input Path to an Rmd file that contains theorem environments written
+#'   in the syntax of code blocks.
+#' @param text A character vector of the Rmd source. When \code{text} is
+#'   provided, the \code{input} argument will be ignored.
+#' @param output The output file to write the converted input content. You can
+#'   specify \code{output} to be identical to \code{input}, which means the
+#'   input file will be overwritten. If you want to overwrite the input file,
+#'   you are strongly recommended to put the file under version control or make
+#'   a backup copy in advance.
+#' @references Learn more about
+#'   \href{https://bookdown.org/yihui/bookdown/markdown-extensions-by-bookdown.html#theorems}{theorems
+#'    and proofs} and
+#'   \href{https://bookdown.org/yihui/rmarkdown-cookbook/custom-blocks.html}{custom
+#'    blocks} in the \pkg{bookdown} book.
+#' @return If \code{output = NULL}, the converted text is returned, otherwise
+#'   the text is written to the output file.
+#' @export
+fence_theorems = function(input, text = xfun::read_utf8(input), output = NULL) {
+  # identify blocks
+  md_pattern = knitr::all_patterns$md
+  block_start = grep(md_pattern$chunk.begin, text)
+  # extract params
+  params = gsub(md_pattern$chunk.begin, "\\1", text[block_start])
+  # find block with custom environment engine
+  reg = sprintf("^(%s).*", paste(all_math_env, collapse = "|"))
+  to_convert = grepl(reg, params)
+  # only modify those blocks
+  params = params[to_convert]
+  block_start = block_start[to_convert]
+  block_end = grep(md_pattern$chunk.end, text)
+  block_end = vapply(block_start, function(x) block_end[block_end > x][1], integer(1))
+  # add a . to engine name
+  params = sprintf(".%s", params)
+  # change label to id
+  params = gsub(",\\s*([-/[:alnum:]]+)(,|\\s*$)", " #\\1", params)
+  params = gsub("label\\s*=\\s*\"([-/[:alnum:]]+)\"", "#\\1", params)
+  # clean , and space
+  params = gsub(",\\s*", " ", params)
+  params = gsub("\\s*=\\s*", "=", params)
+  # modify the blocks
+  text[block_start] = sprintf("::: {%s}", params)
+  text[block_end] = ":::"
+  # return the text or write to output file
+  if (is.null(output)) xfun::raw_string(text) else xfun::write_utf8(text, input)
 }

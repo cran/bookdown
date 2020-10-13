@@ -14,10 +14,13 @@
 #'   Markdown files specified by the book are rendered.
 #' @param output_format,...,clean,envir Arguments to be passed to
 #'   \code{rmarkdown::\link{render}()}. For \code{preview_chapter()}, \code{...}
-#'   is passed to \code{render_book()}.
-#' @param clean_envir Whether to clean up the environment \code{envir} before
-#'   rendering the book. By default, the environment is cleaned when rendering
-#'   the book in a non-interactive R session.
+#'   is passed to \code{render_book()}. See \code{rmarkdown::\link{render}()}
+#'   and \href{https://bookdown.org/yihui/bookdown/build-the-book.html}{the
+#'   bookdown reference book} for details on how output formatting options are
+#'   set from YAML or parameters supplied by the user when calling
+#'   \code{render_book()}.
+#' @param clean_envir This argument has been deprecated and will be removed in
+#'   future versions of \pkg{bookdown}.
 #' @param output_dir The output directory. If \code{NULL}, a field named
 #'   \code{output_dir} in the configuration file \file{_bookdown.yml} will be
 #'   used (possibly not specified, either, in which case a directory name
@@ -35,6 +38,14 @@
 #' @examples
 #' # see https://bookdown.org/yihui/bookdown for the full documentation
 #' if (file.exists('index.Rmd')) bookdown::render_book('index.Rmd')
+#' \dontrun{
+#' # will use the default format defined in index.Rmd or _output.yml
+#' bookdown::render_book("index.Rmd")
+#' # will use the options for format defined in YAML metadata
+#' bookdown::render_book("index.Rmd",  "pdf_book")
+#' # If you pass an output format object, it must have all the options set
+#' bookdown::render_book("index.Rmd", bookdown::pdf_book(toc = FALSE))
+#' }
 render_book = function(
   input, output_format = NULL, ..., clean = TRUE, envir = parent.frame(),
   clean_envir = !interactive(), output_dir = NULL, new_session = NA,
@@ -51,15 +62,18 @@ render_book = function(
       output_format = rmarkdown::all_output_formats(input)
     }
     if (length(output_format) > 1) {
-      return(unlist(lapply(output_format, function(fmt) render_book(
+      return(unlist(lapply(output_format, function(fmt) xfun::Rscript_call(render_book, list(
         input, fmt, ..., clean = clean, envir = envir, output_dir = output_dir,
         new_session = new_session, preview = preview, config_file = config_file
-      ))))
+      )))))
     }
     format = target_format(output_format)
   }
 
-  if (clean_envir) rm(list = ls(envir, all.names = TRUE), envir = envir)
+  if (!missing(clean_envir)) warning(
+    "The argument 'clean_envir' has been deprecated and will be removed in future ",
+    "versions of bookdown."
+  )
 
   if (config_file != '_bookdown.yml') {
     unlink(tmp_config <- tempfile('_bookdown_', '.', '.yml'))
@@ -75,16 +89,13 @@ render_book = function(
   config = load_config()  # configurations in _bookdown.yml
   output_dir = output_dirname(output_dir, config)
   on.exit(clean_empty_dir(output_dir), add = TRUE)
+  if (!preview) unlink(ref_keys_path(output_dir))  # clean up reference-keys.txt
   # store output directory and the initial input Rmd name
   opts$set(
     output_dir = output_dir, input_rmd = basename(input), preview = preview
   )
 
   aux_diro = '_bookdown_files'
-  # for compatibility with bookdown <= 0.0.64
-  if (isTRUE(dir_exists(aux_dir2 <- file.path(output_dir, aux_diro)))) {
-    if (!dir_exists(aux_diro)) file.rename(aux_dir2, aux_diro)
-  }
   # move _files and _cache from _bookdown_files to ./, then from ./ to _bookdown_files
   aux_dirs = files_cache_dirs(aux_diro)
   move_dirs(aux_dirs, basename(aux_dirs))
