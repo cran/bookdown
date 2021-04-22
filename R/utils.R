@@ -271,7 +271,7 @@ strip_html = function(x) {
 # remove the <script><script> content and references
 strip_search_text = function(x) {
   x = gsub('<script[^>]*>(.*?)</script>', '', x)
-  x = gsub('<div id="refs" class="references">.*', '', x)
+  x = gsub('<div id="refs" class="references[^"]*">.*', '', x)
   x = strip_html(x)
   x = gsub('[[:space:]]', ' ', x)
   x
@@ -395,7 +395,7 @@ first_html_format = function() {
   fallback = 'bookdown::gitbook'
   if (!file.exists('index.Rmd')) return(fallback)
   formats = rmarkdown::all_output_formats('index.Rmd')
-  formats = grep('gitbook|html', formats, value = TRUE)
+  formats = grep('gitbook|html|bs4_book', formats, value = TRUE)
   if (length(formats) == 0) fallback else formats[1]
 }
 
@@ -499,7 +499,7 @@ eng_proof = function(options) {
     "The type of proof '", type, "' is not supported yet."
   )
   options$type = type
-  label = label_prefix(type, label_names_math2)
+  label = label_prefix(type, label_names_math2)()
   name = options$name; to_md = output_md()
   if (length(name) == 1) {
     if (!to_md) options$latex.options = sprintf('[%s]', sub('[.]\\s*$', '', name))
@@ -574,8 +574,8 @@ lua_filter = function (filters = NULL) {
 
 # pass _bookdown.yml to Pandoc's Lua filters
 bookdown_yml_arg = function(config = load_config(), path = tempfile()) {
-  # this is supported for Pandoc >= 2.0 only
-  if (!pandoc2.0() || length(config) == 0) return()
+  # this is supported for Pandoc >= 2.3 only
+  if (!rmarkdown::pandoc_available('2.3') || length(config) == 0) return()
   yaml::write_yaml(list(bookdown = config), path)
   c("--metadata-file", rmarkdown::pandoc_path_arg(path))
 }
@@ -619,11 +619,12 @@ fence_theorems = function(input, text = xfun::read_utf8(input), output = NULL) {
   block_end = vapply(block_start, function(x) block_end[block_end > x][1], integer(1))
   # add a . to engine name
   params = sprintf(".%s", params)
-  # change label to id
-  params = gsub(",\\s*([-/[:alnum:]]+)(,|\\s*$)", " #\\1", params)
+  # change implicit label to id
+  params = gsub("^([.][a-zA-Z0-9_]+(?:\\s*,\\s*|\\s+))([-/[:alnum:]]+)(\\s*,|\\s*$)", "\\1#\\2", params)
+  # change explicit label to id
   params = gsub("label\\s*=\\s*\"([-/[:alnum:]]+)\"", "#\\1", params)
-  # clean , and space
-  params = gsub(",\\s*", " ", params)
+  # clean , and spaces
+  params = gsub("\\s*,\\s*", " ", params)
   params = gsub("\\s*=\\s*", "=", params)
   # modify the blocks
   text[block_start] = sprintf("::: {%s}", params)
