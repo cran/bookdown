@@ -2,7 +2,8 @@
 #' @export
 markdown_document2 = function(
   number_sections = TRUE, fig_caption = TRUE, md_extensions = NULL,
-  pandoc_args = NULL, ..., base_format = rmarkdown::md_document
+  global_numbering = !number_sections, pandoc_args = NULL, ...,
+  base_format = rmarkdown::md_document
 ) {
   from = rmarkdown::from_rmarkdown(fig_caption, md_extensions)
 
@@ -10,11 +11,20 @@ markdown_document2 = function(
     number_sections = number_sections, fig_caption = fig_caption,
     md_extensions = md_extensions, pandoc_args = pandoc_args, ...
   ))
+
+  # for docx, Pandoc 2.14.1 numbers figures/tables globally from 1 to n (#1223)
+  if (!global_numbering && rmarkdown::pandoc_available('2.14.1') &&
+      identical(base_format, rmarkdown::word_document)) {
+    if (!missing(global_numbering)) warning(
+      "'global_numbering = FALSE' does not work for Word output with Pandoc >= 2.14.1; ",
+      "Using 'TRUE' instead."
+    )
+    global_numbering = TRUE
+  }
+
   pre = config$pre_processor
   config$pre_processor = function(metadata, input_file, ...) {
-    # Pandoc does not support numbered sections for Word, so figures/tables have
-    # to be numbered globally from 1 to n
-    process_markdown(input_file, from, pandoc_args, !number_sections)
+    process_markdown(input_file, from, pandoc_args, global_numbering)
     if (is.function(pre)) pre(metadata, input_file, ...)
   }
   post = config$post_processor

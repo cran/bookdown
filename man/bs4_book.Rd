@@ -11,50 +11,34 @@ bs4_book(
   ...,
   lib_dir = "libs",
   pandoc_args = NULL,
-  extra_dependencies = NULL
+  extra_dependencies = NULL,
+  split_bib = FALSE
 )
 
-bs4_book_theme(primary = "#0068D9", ...)
+bs4_book_theme(primary = "#0068D9", version = 4, ...)
 }
 \arguments{
 \item{theme}{A named list or \code{\link[bslib:bs_theme]{bslib::bs_theme()}} object.
 The default, \code{bs4_book_theme()}, resets the base font size to 1rem to
-make reading easier and uses a primary colour with greater constrast
+make reading easier and uses a primary colour with greater contrast
 against the background.}
 
-\item{repo}{Link to repository where book is hosted, used to generate
-view source and edit buttons. Currently assumes GitHub and that the book
-is in the root directory of the repo.}
+\item{repo}{Either link to repository where book is hosted, used to generate
+view source and edit buttons or a list with repository \code{base} link, default
+\code{branch}, \code{subdir} and \code{icon}
+(see "Specifying the repository" in \url{https://bookdown.org/yihui/bookdown/html.html#bootstrap4-style}).}
 
-\item{lib_dir, pandoc_args, extra_dependencies, ...}{Passed on to
+\item{lib_dir, pandoc_args, extra_dependencies, split_bib, ...}{Passed on to
 \code{\link[rmarkdown:html_document]{rmarkdown::html_document()}}.}
 
 \item{primary}{Primary colour: used for links and background of footer.}
+
+\item{version}{Passed to \code{\link[bslib:bs_theme]{bslib::bs_theme()}}. This should not be changed as
+\code{\link[=bs4_book]{bs4_book()}} has been designed to work with Bootstrap version 4 for now.}
 }
 \description{
-This output format is built with \href{https://getbootstrap.com}{bootstrap},
-using carefully craft features to provide a clean reading experience whether
-your on a phone, tablet, or desktop.
-
-Some of the main features:
-\itemize{
-\item Easy customisation of colours and fonts with
-\href{https://rstudio.github.io/bslib/}{bslib}
-\item Built in search (broken down by section) that helps you quickly find what
-you're looking for.
-\item A sidebar containing a within-chapter table of contents that makes
-navigation easy and helps provide context about your current position
-within the chapter.
-\item Thoughtful typography to make the contents as easy as possible to read,
-regardless of the size of your device. A sticky header gets out of your
-way when reading, but is easily accessible if you need it.
-\item In-line footnotes mean you can read asides next to the next they refer
-to. This theme is best paired with a reference style that generates
-footnotes.
-\item R syntax highlighting and autolinking by
-\href{https://downlit.r-lib.org/}{downlit} is paired with a accessible
-colour scheme designed by Alison Hill.
-}
-
-This theme is designed for books that use one chapter per page.
+This output format is built with \href{https://getbootstrap.com}{Bootstrap},
+using carefully crafted features to provide a clean reading experience whether
+you are on a phone, tablet, or desktop. To read more about this format, see:
+\url{https://bookdown.org/yihui/bookdown/html.html#bootstrap4-style}
 }

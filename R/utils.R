@@ -129,13 +129,6 @@ mark_dirs = function(x) {
   x
 }
 
-# TODO: use xfun::del_empty_dir()
-clean_empty_dir = function(dir) {
-  if (is.null(dir) || !dir_exists(dir)) return()
-  files = list.files(dir, all.files = TRUE, recursive = TRUE)
-  if (length(files) == 0) unlink(dir, recursive = TRUE)
-}
-
 merge_chapters = function(files, to, before = NULL, after = NULL, orig = files) {
   # in the preview mode, only use some placeholder text instead of the full Rmd
   preview = opts$get('preview'); input = opts$get('input_rmd')
@@ -328,7 +321,7 @@ ref_keys_path = function(d = opts$get('output_dir')) {
 #' compiled from a fresh R session, because the state of the current R session
 #' may not be clean.
 #'
-#' For \code{in_sesion = FALSE}, you do not have access to objects in the book
+#' For \code{in_session = FALSE}, you do not have access to objects in the book
 #' from the current R session, but the output is more likely to be reproducible
 #' since everything is created from new R sessions. Since this function is only
 #' for previewing purposes, the cleanness of the R session may not be a big
@@ -426,8 +419,11 @@ files_cache_dirs = function(dir = '.') {
 # everything from `from` to `to`, and delete `from`
 move_dir = function(from, to) {
   if (!dir_exists(to)) return(file.rename(from, to))
-  if (file.copy(list.files(from, full.names = TRUE), to, recursive = TRUE))
-    unlink(from, recursive = TRUE)
+  to_copy = list.files(from, full.names = TRUE)
+  if (length(to_copy) == 0 ||
+      any(file.copy(list.files(from, full.names = TRUE), to, recursive = TRUE))
+  ) unlink(from, recursive = TRUE)
+  invisible(TRUE)
 }
 
 move_dirs = function(from, to) mapply(move_dir, from, to)
