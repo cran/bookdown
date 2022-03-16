@@ -32,10 +32,13 @@ common_format_config = function(
   # provide file_scope if requested
   if (file_scope) config$file_scope = md_chapter_splitter
 
-  # prepend the custom-environment filter
-  config$pandoc$lua_filters = c(
-    lua_filter("custom-environment.lua"), config$pandoc$lua_filters
-  )
+  # prepend the custom-environment filter unless opt-out
+  if (getOption("bookdown.theorem.enabled", TRUE)) {
+    config$pandoc$lua_filters = c(
+      lua_filter("custom-environment.lua"),
+      config$pandoc$lua_filters
+    )
+  }
   # and add bookdown metadata file for the filter to work
   config$pandoc$args = c(bookdown_yml_arg(), config$pandoc$args)
 
@@ -47,6 +50,12 @@ common_format_config = function(
   # when the output is LaTeX, force LaTeX tables instead of default Pandoc tables
   # http://tex.stackexchange.com/q/276699/9128
   config$knitr$opts_knit$kable.force.latex = TRUE
+
+  # deactivate header attributes handling from rmarkdown
+  # as done in bookdown::clean_html_tag()
+  opts <- options(rmarkdown.html_dependency.header_attr = FALSE)
+  config$on_exit <- function() options(opts)
+
   config
 }
 
@@ -428,14 +437,10 @@ move_dir = function(from, to) {
 
 move_dirs = function(from, to) mapply(move_dir, from, to)
 
-existing_files = function(x, first = FALSE) {
-  x = x[file.exists(x)]
-  if (first) head(x, 1) else x
-}
-
-existing_r = function(base, first = FALSE) {
+#' @importFrom xfun existing_files
+existing_r = function(base) {
   x = apply(expand.grid(base, c('R', 'r')), 1, paste, collapse = '.')
-  existing_files(x, first)
+  existing_files(x)
 }
 
 target_format = function(format) {
@@ -470,22 +475,11 @@ eng_theorem = function(options) {
   if (!(type %in% names(theorem_abbr))) stop(
     "The type of theorem '", type, "' is not supported yet."
   )
-  options$type = type
-  label = paste(theorem_abbr[type], options$label, sep = ':')
-  html.before2 = sprintf('(\\#%s) ', label)
-  name = options$name; to_md = output_md()
-  if (length(name) == 1) {
-    if (to_md) {
-      html.before2 = paste(html.before2, sprintf('(%s) ', name))
-    } else {
-      options$latex.options = sprintf('[%s]', name)
-      html.before2 = paste(html.before2, sprintf('\\iffalse (%s) \\fi{} ', name))
-    }
-  }
-  options$html.before2 = sprintf(
-    '<span class="%s" id="%s"><strong>%s</strong></span>', type, label, html.before2
-  )
-  process_block(options, to_md)
+  label = paste0('#', options$label)
+  name = sprintf('name="%s"', options$name)
+  # TODO: use knitr:::fenced_block(options$code, c(label, name), class = type, .char = ':')
+  res = paste(c(paste0('.', type), label, name), collapse = ' ')
+  paste(c(sprintf('::: {%s}', res), options$code, ':::'), collapse = '\n')
 }
 
 # a proof engine for unnumbered math environments
@@ -494,38 +488,10 @@ eng_proof = function(options) {
   if (!(type %in% names(label_names_math2))) stop(
     "The type of proof '", type, "' is not supported yet."
   )
-  options$type = type
-  label = label_prefix(type, label_names_math2)()
-  name = options$name; to_md = output_md()
-  if (length(name) == 1) {
-    if (!to_md) options$latex.options = sprintf('[%s]', sub('[.]\\s*$', '', name))
-    r = '^(.+?)([[:punct:][:space:]]+)$'  # "Remark. " -> "Remark (Name). "
-    if (grepl(r, label)) {
-      label1 = gsub(r, '\\1', label)
-      label2 = paste0(' (', name, ')', gsub(r, '\\2', label))
-    } else {
-      label1 = label; label2 = ''
-    }
-    label = sprintf('<em>%s</em>%s', label1, label2)
-  } else {
-    label = sprintf('<em>%s</em>', label)
-  }
-  options$html.before2 = sprintf(
-    '<span class="%s">%s</span> ', type, label
-  )
-  if (!to_md) options$html.before2 = paste('\\iffalse{}', options$html.before2, '\\fi{}')
-  process_block(options, to_md)
-}
-
-process_block = function(options, md) {
-  if (md) {
-    code = options$code
-    code = knitr:::pandoc_fragment(code)
-    r = '^<p>(.+)</p>$'
-    if (length(code) > 0 && grepl(r, code[1])) code[1] = gsub(r, '\\1', code[1])
-    options$code = code
-  }
-  knitr:::eng_block2(options)
+  name = sprintf('name="%s"', options$name)
+  # TODO: use knitr:::fenced_block()
+  res = paste(c(paste0('.', type), name), collapse = ' ')
+  paste(c(sprintf('::: {%s}', res), options$code, ':::'), collapse = '\n')
 }
 
 register_eng_math = function(envs, engine) {
