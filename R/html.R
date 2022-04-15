@@ -944,11 +944,11 @@ restore_part_html = function(x, remove = TRUE) {
     )
   }
 
-  r = '^<li><a href="[^"]*">\\(PART\\*\\) (.+)</a>(.+)$'
+  r = '^<li><a href="[^"]*"[^>]*>\\(PART\\*\\) (.+)</a>(.+)$'
   i = grep(r, x)
   x[i] = gsub(r, '<li class="part"><span><b>\\1</b></span>\\2', x[i])
 
-  r = '^<li><a href="[^"]*">\\(PART\\) (.+)</a>(.+)$'
+  r = '^<li><a href="[^"]*"[^>]*>\\(PART\\) (.+)</a>(.+)$'
   i = grep(r, x)
   if (length(i) == 0) return(x)
   x[i] = mapply(
@@ -969,7 +969,7 @@ restore_appendix_html = function(x, remove = TRUE) {
     x[i] = x[i - 1] = x[i + 1] = ''
   } else x[i] = gsub(r, '\\1\\2\\3', x[i])
   x = number_appendix(x, i + 1, length(x), 'header')
-  r = '^<li><a href="[^"]*">\\(APPENDIX\\) (.+)</a>(.+)$'
+  r = '^<li><a href="[^"]*"[^>]*>\\(APPENDIX\\) (.+)</a>(.+)$'
   i = find_appendix_line(r, x)
   if (length(i) == 0) return(x)
   # remove link on (APPENDIX) in the TOC item
