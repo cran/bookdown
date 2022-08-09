@@ -1,4 +1,4 @@
-7d31241aaf9cd699100e9e8429d1acbe *DESCRIPTION
+9f0a879f3a8d4e9387456f1d4f2055ce *DESCRIPTION
 09751abf661d0708268cd2ae4223f76c *NAMESPACE
 b1ccefb1680956d537835a881eefa9d6 *R/addins.R
 2abc3a4ff8d84f97295e10876e6d4400 *R/bookdown-package.R
@@ -11,11 +11,11 @@ d4b5416f514b636430f3ddec4a46b529 *R/latex.R
 4b6db3f68cd6d3cafd7e6af739e4beae *R/render.R
 9f7e9db5ddc63975c84ae80ff4768e6e *R/site.R
 dc11a8cc2b2e82fe1f7753db40853656 *R/skeleton.R
-0e212f8016755638ec64407cf8a19120 *R/utils.R
+cd0a35cde58c376a3a8121a53fdbc142 *R/utils.R
 77c8d46bf0debe8cbb7220cb36b8675e *R/word.R
 03e2e76bd2957bc53bbf70238cc97a9c *R/zzz.R
 e26a071f7854308a30ff95c6348312c5 *README.md
-a655ddff3beee2351377caf8205d3118 *build/vignette.rds
+eeaacabf3f888f549ec72a5c914f26d8 *build/vignette.rds
 4a794906ceef0b82ef3d9f79cb64c7c6 *inst/CITATION
 8c99bf4786131797a54e3f206463b9f3 *inst/NEWS.Rd
 cf9ce72cd7ca0adc1e109d2edc0b6406 *inst/doc/bookdown.R
@@ -31,13 +31,13 @@ ddba6e8649d659db2ca0e963ee4b76fb *inst/resources/gitbook/css/plugin-fontsettings
 467fbe4b6b5a4b88fdd75c463f8626ec *inst/resources/gitbook/css/plugin-highlight.css
 0d7a6bb6a50e00c7358cf61027f099f0 *inst/resources/gitbook/css/plugin-search.css
 8cb82f94ce1446fa4bafe7a3933e6c65 *inst/resources/gitbook/css/plugin-table.css
-ffbe961c224c831b1f965aa2baab80f5 *inst/resources/gitbook/css/style.css
+8ca22ea18b283f8df1cdd191c2c6646f *inst/resources/gitbook/css/style.css
 395a8093ce46450cabfaa545a0705a3b *inst/resources/gitbook/js/app.min.js
 be72101c8c16ba95fd8b69760d5ebc56 *inst/resources/gitbook/js/clipboard.min.js
 999424d32e03b9857098d2c7f53928c2 *inst/resources/gitbook/js/jquery.highlight.js
 fbc747c6143aabb39b0ea7c0524b7057 *inst/resources/gitbook/js/lunr.js
 36b5487b9c1020c0de1352b8f26b8a8e *inst/resources/gitbook/js/plugin-bookdown.js
-a30f95fcd3fde10637ace1fb691b7475 *inst/resources/gitbook/js/plugin-clipboard.js
+1b9c02dda66377b4fe429c85b58efd6e *inst/resources/gitbook/js/plugin-clipboard.js
 4f57689705fdfa3eabfb7b7b92614f33 *inst/resources/gitbook/js/plugin-fontsettings.js
 a906e04e1fc7aa9e057f3de4668f4a68 *inst/resources/gitbook/js/plugin-search.js
 e2b65328457b1e2b16c46a0fd4f2852c *inst/resources/gitbook/js/plugin-sharing.js
@@ -72,9 +72,9 @@ b4ac5bd8a37fe7c6a42e0f645045fc64 *inst/rstudio/templates/project/resources/gitbo
 920d6099e5c2d7039e37151e635f3c11 *inst/scripts/mathquill.R
 913a08b14c50f95a5e03602216a6090a *inst/scripts/render_one.R
 4eca442fd78880ae098d153bb69e4e44 *inst/scripts/servr.R
-7765a5a8250e3e7f76846c5ac5aca4a7 *inst/templates/bs4_book.html
+f43f330dbcaf9da7677de8bf3ffb6f35 *inst/templates/bs4_book.html
 b3505fb97625e433fd96070b1e2f2244 *inst/templates/default.html
-ca6de3e68ff10304c10307a1a8e76a44 *inst/templates/gitbook.html
+72b58ff24b7f4bdfdc225fab53d2b122 *inst/templates/gitbook.html
 b1b1571a1d7ede828572804342f1c787 *man/bookdown-package.Rd
 15ba4ce6395b2181211303bbd1c3677c *man/bookdown_site.Rd
 ba6f680d958abb5f2b3b6a7ac87f60f2 *man/bs4_book.Rd
