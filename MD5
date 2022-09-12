@@ -1,10 +1,10 @@
-9f0a879f3a8d4e9387456f1d4f2055ce *DESCRIPTION
+214d84a12ae330f168d4556480504abb *DESCRIPTION
 09751abf661d0708268cd2ae4223f76c *NAMESPACE
 b1ccefb1680956d537835a881eefa9d6 *R/addins.R
 2abc3a4ff8d84f97295e10876e6d4400 *R/bookdown-package.R
-9f8d2ed8bf2595aab92371a24de1a196 *R/bs4_book.R
+1c8f6e3004e39cf5ff5dc82fbf542400 *R/bs4_book.R
 2fe736eea0d007ed06370604b949f664 *R/ebook.R
-76ead4e3409bac135a12dd43cb9e6c8f *R/gitbook.R
+7a537e32d7d859476f9bba5caef9a774 *R/gitbook.R
 7bc0e5e42837508ddcd4c327ecc7d05f *R/html.R
 d4b5416f514b636430f3ddec4a46b529 *R/latex.R
 34ae1eb3b743664700dcfdbce2661f2d *R/publish.R
@@ -85,7 +85,7 @@ b7b83172857bda6bae25a385954d9c46 *man/create_book.Rd
 87a64442bf77633262382fb448bbeb06 *man/epub_book.Rd
 722a8d9512bb79276e2a4ce354cd5087 *man/fence_theorems.Rd
 5ae182f82dd9ed14ef9c472187d98f7b *man/figures/logo.png
-9afe0f143416636ac0a6c4ff4ceec8b1 *man/gitbook.Rd
+23bbdf861e4f32d5a05daf0eb929a925 *man/gitbook.Rd
 f67905c9fee74676d90be932235a61f1 *man/html_chapters.Rd
 2d8bb06cff61f09d0277e7c9c0fdcffa *man/html_document2.Rd
 10918649b2d80a205d7bd6a61b79fa2c *man/kindlegen.Rd
