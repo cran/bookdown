@@ -1,9 +1,9 @@
-ec5f61645b95ec852876525de1944eae *DESCRIPTION
-09751abf661d0708268cd2ae4223f76c *NAMESPACE
+1f20edd95227be9297a8dc4c4d666d70 *DESCRIPTION
+d55681e64fbe0b36ac502acbf6308a80 *NAMESPACE
 b1ccefb1680956d537835a881eefa9d6 *R/addins.R
 2abc3a4ff8d84f97295e10876e6d4400 *R/bookdown-package.R
 fb2a8fc6dc7fa91238b260d71e4c3231 *R/bs4_book.R
-2fe736eea0d007ed06370604b949f664 *R/ebook.R
+c12028cb02b999520d73e479634b0b61 *R/ebook.R
 7e86c999531fcb2813f8b1fa7c0e5e02 *R/gitbook.R
 7bc0e5e42837508ddcd4c327ecc7d05f *R/html.R
 d4b5416f514b636430f3ddec4a46b529 *R/latex.R
@@ -45,7 +45,7 @@ e2b65328457b1e2b16c46a0fd4f2852c *inst/resources/gitbook/js/plugin-sharing.js
 d7c2f5c109458df01f00898152ac3206 *inst/resources/mathquill/init.js
 0f737359d7dc5f756573942be9ebcdf6 *inst/resources/mathquill/mathquill.css
 568ea486ab587bb952d3b61aed1dcd6a *inst/resources/mathquill/mathquill.min.js
-463ef160e7b624c08eb79fcceb4449fa *inst/rmarkdown/lua/custom-environment.lua
+00235ff26fe9a5e7415f980ed77ebb29 *inst/rmarkdown/lua/custom-environment.lua
 21227ab0e348dfdf51a69301ffbffb58 *inst/rstudio/addins.dcf
 d768fb307aab41da41e4514b0a1c5a06 *inst/rstudio/templates/project/book.png
 b3917889cd885e3a9ada51c12a010e20 *inst/rstudio/templates/project/resources/bs4_book/_bookdown.yml
@@ -88,7 +88,6 @@ b7b83172857bda6bae25a385954d9c46 *man/create_book.Rd
 23bbdf861e4f32d5a05daf0eb929a925 *man/gitbook.Rd
 f67905c9fee74676d90be932235a61f1 *man/html_chapters.Rd
 2d8bb06cff61f09d0277e7c9c0fdcffa *man/html_document2.Rd
-10918649b2d80a205d7bd6a61b79fa2c *man/kindlegen.Rd
 403b5badc599ca87a5342b44b0757e8f *man/pdf_book.Rd
 28f6080d3bfbac51c31df236ba4adbf5 *man/publish_book.Rd
 f2ac59b1eef7d143ca63cd5258ad6997 *man/render_book.Rd
