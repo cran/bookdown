@@ -46,7 +46,9 @@ epub_book = function(
     if (!is.null(cover_image)) c('--epub-cover-image', cover_image),
     if (!is.null(metadata)) c('--epub-metadata', metadata),
     if (!identical(template, 'default')) c('--template', template),
-    if (!missing(chapter_level)) c('--epub-chapter-level', chapter_level)
+    if (rmarkdown::pandoc_available('2.19') && epub_version == 'epub3') c('--mathml'),
+    if (!missing(chapter_level))
+      c(if (rmarkdown::pandoc_available('3.0')) '--split-level' else '--epub-chapter-level', chapter_level)
   )
   if (is.null(stylesheet)) css = NULL else {
     css = rmarkdown::pandoc_path_arg(epub_css(stylesheet))
@@ -118,12 +120,13 @@ resolve_refs_md = function(content, ref_table, to_md = output_md()) {
     for (j in ids) {
       m = sprintf('\\(\\\\#%s\\)', j)
       if (grepl(m, content[i])) {
-        id = ''; sep = ':'
         type = gsub('^([^:]+).*$', '\\1', j)
-        if (type %in% theorem_abbr) {
-          id = sprintf('<span id="%s"></span>', j)
-          sep = ''
-        }
+        sep = if (type %in% theorem_abbr) '' else ':'
+        id = if (type %in% c(theorem_abbr, 'fig', 'tab')) {
+          sprintf('<span id="%s"></span>', j)
+        } else ''
+        # TODO: get rid of this hack https://github.com/davidgohel/flextable/pull/539
+        if (type == 'tab' && xfun::check_old_package('flextable', '0.9.1')) id = ''
         label = label_prefix(type, sep = sep)(ref_table[j])
         content[i] = sub(m, paste0(id, label, ' '), content[i])
         break

@@ -262,10 +262,7 @@ clean_meta = function(meta_file, files) {
 
 # remove HTML tags and remove extra spaces
 strip_html = function(x) {
-  x = gsub('<!--.*?-->', '', x)  # remove comments
-  x = gsub('<[^>]+>', '', x)
-  x = gsub('\\s{2,}', ' ', x)
-  x
+  gsub('\\s{2,}', ' ', xfun::strip_html(x))
 }
 
 # remove the <script><script> content and references
@@ -279,10 +276,6 @@ strip_search_text = function(x) {
 
 # manipulate internal options
 opts = knitr:::new_defaults(list(config = list()))
-
-dir_create = function(path) {
-  dir_exists(path) || dir.create(path, recursive = TRUE)
-}
 
 # a wrapper of file.path to ignore `output_dir` if it is NULL
 output_path = function(...) {
@@ -446,7 +439,7 @@ base64_css = function(css, exts = 'png', overwrite = FALSE) {
     if (length(ps) == 0) return(ps)
     ps = gsub('^url\\("|"\\)$', '', ps)
     sprintf('url("%s")', sapply(ps, function(p) {
-      if (grepl(r, p) && file.exists(p)) knitr::image_uri(p) else p
+      if (grepl(r, p) && file.exists(p)) xfun::base64_uri(p) else p
     }))
   })
   if (overwrite) write_utf8(x, css) else x
@@ -495,7 +488,7 @@ verify_rstudio_version = function() {
   if (requireNamespace('rstudioapi', quietly = TRUE) && rstudioapi::isAvailable()) {
     if (!rstudioapi::isAvailable('0.99.1200')) warning(
       'Please install a newer version of the RStudio IDE: ',
-      'https://www.rstudio.com/products/rstudio/download/'
+      'https://posit.co/download/rstudio-desktop/'
     )
   } else if (!rmarkdown::pandoc_available('1.17.2')) warning(
     "Please install or upgrade Pandoc to at least version 1.17.2; ",
