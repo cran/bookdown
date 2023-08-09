@@ -1,4 +1,4 @@
-4563902ff2c6bb701abe5a7e2397223c *DESCRIPTION
+cf16150650ba7546be00966dbf83eaa5 *DESCRIPTION
 8e07e65a67c25f5475b61fe79b9797b0 *NAMESPACE
 b1ccefb1680956d537835a881eefa9d6 *R/addins.R
 0b42e9cd4d0b958c6b32864d3142cdfc *R/bookdown-package.R
@@ -15,7 +15,7 @@ dc11a8cc2b2e82fe1f7753db40853656 *R/skeleton.R
 77c8d46bf0debe8cbb7220cb36b8675e *R/word.R
 03e2e76bd2957bc53bbf70238cc97a9c *R/zzz.R
 32b2af83bf9176b8e47d0651ba01e2c7 *README.md
-8227fd3e9a4e4ce86af9455aed942364 *build/vignette.rds
+5d0921899ef68a7fa53cc29d5de2a611 *build/vignette.rds
 18e707350fd5776f597719ec538db91b *inst/CITATION
 8c99bf4786131797a54e3f206463b9f3 *inst/NEWS.Rd
 cf9ce72cd7ca0adc1e109d2edc0b6406 *inst/doc/bookdown.R
@@ -23,7 +23,7 @@ cf9ce72cd7ca0adc1e109d2edc0b6406 *inst/doc/bookdown.R
 e465312cfa6b4b189b1c852698caaa00 *inst/doc/bookdown.html
 ca705c92a239d8796151ac94142a0fa2 *inst/resources/AUTHORS
 9330d35c12ba23fa703478545b3eac1e *inst/resources/bs4_book/bs4_book.css
-bee86a369aef1ad33e706969be4c873f *inst/resources/bs4_book/bs4_book.js
+0010db292f4cb11fc43751aa5fbf4d96 *inst/resources/bs4_book/bs4_book.js
 b06871f281fee6b241d60582ae9369b9 *inst/resources/gitbook/css/fontawesome/fontawesome-webfont.ttf
 511b32706d0828b46237a7cdebf52126 *inst/resources/gitbook/css/plugin-bookdown.css
 e4a3bdc1e3d5590f47cbac67976f3961 *inst/resources/gitbook/css/plugin-clipboard.css
