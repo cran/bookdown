@@ -69,10 +69,11 @@ get_base_format = function(format, options = list()) {
   do.call(format, options)
 }
 
-load_config = function() {
-  if (length(opts$get('config')) == 0 && file.exists('_bookdown.yml')) {
+load_config = function(config_file = '_bookdown.yml') {
+  config_file = opts$get('config_file') %n% config_file
+  if (length(opts$get('config')) == 0 && file.exists(config_file)) {
     # store the book config
-    opts$set(config = rmarkdown:::yaml_load_file('_bookdown.yml'))
+    opts$set(config = rmarkdown:::yaml_load_file(config_file))
   }
   opts$get('config')
 }
@@ -447,8 +448,11 @@ base64_css = function(css, exts = 'png', overwrite = FALSE) {
 
 files_cache_dirs = function(dir = '.') {
   if (!dir_exists(dir)) return(character())
-  out = list.files(dir, '_(files|cache)$', full.names = TRUE)
+  r = '_(files|cache)$'
+  out = list.files(dir, r, full.names = TRUE)
   out = out[dir_exists(out)]
+  # only use dirs that have corresponding Rmd files
+  if (dir == '.') out = out[file.exists(sub(r, '.Rmd', out))]
   out = out[basename(out) != '_bookdown_files']
   out
 }
