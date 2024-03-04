@@ -1,4 +1,4 @@
-8d5c63033948e726173a76e4f5c386fd *DESCRIPTION
+0976c4552a1f28e2f98b9be22e1a635c *DESCRIPTION
 8e07e65a67c25f5475b61fe79b9797b0 *NAMESPACE
 b1ccefb1680956d537835a881eefa9d6 *R/addins.R
 0b42e9cd4d0b958c6b32864d3142cdfc *R/bookdown-package.R
@@ -11,7 +11,7 @@ d4b5416f514b636430f3ddec4a46b529 *R/latex.R
 e115792672965002005a67d802fb4d69 *R/render.R
 c24204ee53dc818d4735940bf4ce7140 *R/site.R
 dc11a8cc2b2e82fe1f7753db40853656 *R/skeleton.R
-7f2017456504805b4880be1a843a1e95 *R/utils.R
+093b023152d652a9e2ebe13e27bb141a *R/utils.R
 77c8d46bf0debe8cbb7220cb36b8675e *R/word.R
 03e2e76bd2957bc53bbf70238cc97a9c *R/zzz.R
 32b2af83bf9176b8e47d0651ba01e2c7 *README.md
@@ -89,7 +89,7 @@ b7b83172857bda6bae25a385954d9c46 *man/create_book.Rd
 f67905c9fee74676d90be932235a61f1 *man/html_chapters.Rd
 2d8bb06cff61f09d0277e7c9c0fdcffa *man/html_document2.Rd
 403b5badc599ca87a5342b44b0757e8f *man/pdf_book.Rd
-28f6080d3bfbac51c31df236ba4adbf5 *man/publish_book.Rd
+96ca3b518202927e2a3407f756f2fb96 *man/publish_book.Rd
 f2ac59b1eef7d143ca63cd5258ad6997 *man/render_book.Rd
 e2df4140eed9fa64cba7a07ad80c690c *man/resolve_refs_html.Rd
 6a1693286e9ab6886f21819814e2fff4 *man/serve_book.Rd
