@@ -70,7 +70,7 @@ get_base_format = function(format, options = list()) {
 }
 
 load_config = function(config_file = '_bookdown.yml') {
-  config_file = opts$get('config_file') %n% config_file
+  config_file = opts$get('config_file') %||% config_file
   if (length(opts$get('config')) == 0 && file.exists(config_file)) {
     # store the book config
     opts$set(config = rmarkdown:::yaml_load_file(config_file))
@@ -86,12 +86,13 @@ book_filename = function(config = load_config(), fallback = TRUE) {
 
 source_files = function(format = NULL, config = load_config(), all = FALSE) {
   subdir = config[['rmd_subdir']]; subdir_yes = isTRUE(subdir) || is.character(subdir)
+  ext_regex = if (isTRUE(config[['include_md']])) '[.]R?md$' else '[.]Rmd$'
   # a list of Rmd chapters
-  files = list.files('.', '[.]Rmd$', ignore.case = TRUE)
+  files = list.files('.', ext_regex, ignore.case = TRUE)
   # content in subdir if asked
   subdir_files = unlist(mapply(
     list.files,
-    if (is.character(subdir)) subdir else '.', '[.]Rmd$', ignore.case = TRUE,
+    if (is.character(subdir)) subdir else '.', ext_regex, ignore.case = TRUE,
     recursive = subdir_yes, full.names = is.character(subdir), USE.NAMES = FALSE
   ))
   subdir_files = setdiff(subdir_files, files)
@@ -489,7 +490,7 @@ verify_rstudio_version = function() {
 
 str_trim = function(x) gsub('^\\s+|\\s+$', '', x)
 
-`%n%` = knitr:::`%n%`
+if (getRversion() < '4.4.0') `%||%` = function(x, y) if (is.null(x)) y else x
 
 output_md = function() getOption('bookdown.output.markdown', FALSE)
 
