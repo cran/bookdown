@@ -1,11 +1,11 @@
-217dee2febc343fc6b2a78da524c0726 *DESCRIPTION
+b6e36b067dee3764199369c54e75f1a8 *DESCRIPTION
 339227ba7eeaeb110a0fb81b1bc9da21 *NAMESPACE
 b1ccefb1680956d537835a881eefa9d6 *R/addins.R
 cf75480fdbe2fb732edb8ed4dafd771e *R/bookdown-package.R
 37a49943ca5fc30cd2a11861d0b5cc7e *R/bs4_book.R
 1b56f123adad1eb6c79810e26dc49319 *R/ebook.R
 085424b545e93f7a1fc9a94e8a0effe3 *R/gitbook.R
-46c59b2d9f96c6f10782eb6300a57db4 *R/html.R
+f5a5455d3699a52e6f29960cb8e92e0d *R/html.R
 69f00d5dbf819f7f403a2752a6da8c59 *R/latex.R
 34ae1eb3b743664700dcfdbce2661f2d *R/publish.R
 0a7298e7d87af8ac1c82f4e2c4f19fcf *R/render.R
@@ -15,7 +15,7 @@ c24204ee53dc818d4735940bf4ce7140 *R/site.R
 77c8d46bf0debe8cbb7220cb36b8675e *R/word.R
 03e2e76bd2957bc53bbf70238cc97a9c *R/zzz.R
 1ebe91c92ca1e041397152d7cb6bb756 *README.md
-d941da7a5879b128f3c933e965f28f8c *build/vignette.rds
+09d92276f9b7f3437d3479ccb74becfc *build/vignette.rds
 18e707350fd5776f597719ec538db91b *inst/CITATION
 8c99bf4786131797a54e3f206463b9f3 *inst/NEWS.Rd
 4b557f5ec8f03c64b5e4f9a39e8ebacf *inst/doc/bookdown.R
@@ -31,7 +31,7 @@ ddba6e8649d659db2ca0e963ee4b76fb *inst/resources/gitbook/css/plugin-fontsettings
 bd8308dfb2f6b1f91838d5c6186138e1 *inst/resources/gitbook/css/plugin-highlight.css
 0d7a6bb6a50e00c7358cf61027f099f0 *inst/resources/gitbook/css/plugin-search.css
 8cb82f94ce1446fa4bafe7a3933e6c65 *inst/resources/gitbook/css/plugin-table.css
-8ca22ea18b283f8df1cdd191c2c6646f *inst/resources/gitbook/css/style.css
+b21a9c457dc7c4339b44416789033985 *inst/resources/gitbook/css/style.css
 395a8093ce46450cabfaa545a0705a3b *inst/resources/gitbook/js/app.min.js
 be72101c8c16ba95fd8b69760d5ebc56 *inst/resources/gitbook/js/clipboard.min.js
 999424d32e03b9857098d2c7f53928c2 *inst/resources/gitbook/js/jquery.highlight.js
@@ -108,10 +108,12 @@ ad2260873bdd136bc1f6e193f585c411 *tests/testthat.R
 6db76d96145ba61523da3bb1ec6be6a2 *tests/testthat/helper-bs4_book.R
 83e353c2380fa816ef43d83bda50074b *tests/testthat/helper-validate_html.R
 d0b3762a447b2a84c3c51c29cb0c971a *tests/testthat/helper.R
+4252b3c43fd11cf76822f0c934f35306 *tests/testthat/resources/figures.Rmd
+eecbda58c48cb18a1687d2b2bbc06342 *tests/testthat/resources/md.png
 f00d56ff74b2ece3c47f021439a20f46 *tests/testthat/test-bs4_book.R
 2d4a0d388b4f59ad0d247c05ed180921 *tests/testthat/test-ebook.R
 9fd600e393c2cc265802e3cec02df0e2 *tests/testthat/test-gitbook.R
-35ab1cb8ce3daba3e2cf107f2164f7c0 *tests/testthat/test-html.R
+3e3ad034142c56ec9e56974a96f665b6 *tests/testthat/test-html.R
 3a5396da31b9693596ee63e81e647383 *tests/testthat/test-site.R
 e829b753ed7d3846a42cec49e7f96729 *tests/testthat/test-skeleton.R
 360d6728fa9f8581b516abd7cb91f392 *tests/testthat/test-split_by.R
