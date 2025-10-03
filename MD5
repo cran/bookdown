@@ -1,11 +1,11 @@
-b6e36b067dee3764199369c54e75f1a8 *DESCRIPTION
+34e4c623761234e1aafd576e736815a0 *DESCRIPTION
 339227ba7eeaeb110a0fb81b1bc9da21 *NAMESPACE
 b1ccefb1680956d537835a881eefa9d6 *R/addins.R
 cf75480fdbe2fb732edb8ed4dafd771e *R/bookdown-package.R
 37a49943ca5fc30cd2a11861d0b5cc7e *R/bs4_book.R
 1b56f123adad1eb6c79810e26dc49319 *R/ebook.R
 085424b545e93f7a1fc9a94e8a0effe3 *R/gitbook.R
-f5a5455d3699a52e6f29960cb8e92e0d *R/html.R
+620ccd05e13ec46d8a9c70f7a2a26f47 *R/html.R
 69f00d5dbf819f7f403a2752a6da8c59 *R/latex.R
 34ae1eb3b743664700dcfdbce2661f2d *R/publish.R
 0a7298e7d87af8ac1c82f4e2c4f19fcf *R/render.R
@@ -112,7 +112,7 @@ d0b3762a447b2a84c3c51c29cb0c971a *tests/testthat/helper.R
 eecbda58c48cb18a1687d2b2bbc06342 *tests/testthat/resources/md.png
 f00d56ff74b2ece3c47f021439a20f46 *tests/testthat/test-bs4_book.R
 2d4a0d388b4f59ad0d247c05ed180921 *tests/testthat/test-ebook.R
-9fd600e393c2cc265802e3cec02df0e2 *tests/testthat/test-gitbook.R
+444f57bb8294525a96000aef4ea55f53 *tests/testthat/test-gitbook.R
 3e3ad034142c56ec9e56974a96f665b6 *tests/testthat/test-html.R
 3a5396da31b9693596ee63e81e647383 *tests/testthat/test-site.R
 e829b753ed7d3846a42cec49e7f96729 *tests/testthat/test-skeleton.R
